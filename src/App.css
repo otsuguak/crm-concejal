@@ -4,11 +4,8 @@
   flex-direction: row !important;
 }
 
-.sidebar-pro {
-  width: 260px !important;
-  height: 100vh !important;
-  position: sticky !important;
-  top: 0;
+.sidebar {
+  background-color: #0f172a !important; /* Azul muy oscuro para que el blanco resalte */
 }
 
 .grid-stats {
@@ -23,12 +20,9 @@
     flex-direction: column !important; /* El menú se va para arriba */
   }
 
-  .sidebar-pro {
-    width: 100% !important;
-    height: auto !important;
-    padding: 1rem !important;
-    position: relative !important;
-  }
+  .sidebar {
+  background-color: #0f172a !important; /* Azul muy oscuro para que el blanco resalte */
+}
 
   .grid-stats {
     grid-template-columns: 1fr 1fr !important; /* Dos tarjetas por fila en celular */
@@ -48,4 +42,115 @@
   .grid-stats {
     grid-template-columns: 1fr !important; /* Una sola tarjeta por fila en celular pequeño */
   }
+}
+
+@keyframes latido {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+.loader-overlay {
+  position: fixed; inset: 0; background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(5px); display: flex; flex-direction: column;
+  justify-content: center; alignItems: center; z-index: 9999;
+}
+
+.logo-latido {
+  width: 100px; height: 100px; background: #E30613; color: white;
+  border-radius: 50%; display: flex; justify-content: center;
+  align-items: center; font-size: 3rem; font-weight: 900;
+  box-shadow: 0 0 20px rgba(227, 6, 19, 0.4);
+  animation: latido 1.5s infinite ease-in-out;
+}
+
+/* App.css - SECCIÓN DEL CARGADOR CREATIVO #5 */
+
+/* 1. Definición de movimientos (Animaciones) */
+@keyframes cr5-rotar-aro-uno {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cr5-rotar-aro-dos {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes cr5-latido-logo {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* 2. Estilos de la Pantalla Trasparente (Glassmorphism) */
+.cr5-loader-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.85); /* Fondo blanco traslúcido */
+  backdrop-filter: blur(10px); /* Desenfoque profesional del fondo */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Por encima de TODO */
+}
+
+/* 3. Contenedor del Corazón y los Aros (Matemática pura centrada) */
+.cr5-loader-container {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 4. Los Aros Azules concéntricos */
+.cr5-aro-azul {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 6px solid transparent;
+  border-top-color: #003366; /* Azul Cambio Radical */
+  animation: cr5-rotar-aro-uno 1.5s linear infinite;
+  opacity: 0.7;
+}
+
+.cr5-aro-azul::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  border: 6px solid transparent;
+  border-bottom-color: #38bdf8; /* Un azul más claro para contraste */
+  animation: cr5-rotar-aro-dos 2.5s linear infinite;
+  opacity: 0.5;
+}
+
+/* 5. El Corazón rojo del #5 (El latido) */
+.cr5-logo-centro {
+  width: 90px;
+  height: 90px;
+  background-color: #E30613; /* Rojo Cambio Radical */
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 3.5rem;
+  font-weight: 900;
+  box-shadow: 0 10px 25px rgba(227, 6, 19, 0.4);
+  animation: cr5-latido-logo 1.8s ease-in-out infinite;
+  z-index: 2; /* Por encima de los aros */
+}
+
+/* 6. Texto de Feedback */
+.cr5-loader-texto {
+  margin-top: 35px;
+  color: #003366;
+  font-weight: 800;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0.9;
 }
