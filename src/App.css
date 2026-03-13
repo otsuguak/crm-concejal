@@ -1,0 +1,51 @@
+/* --- DISEÑO PARA COMPUTADOR (Escritorio) --- */
+.layout-principal {
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+.sidebar-pro {
+  width: 260px !important;
+  height: 100vh !important;
+  position: sticky !important;
+  top: 0;
+}
+
+.grid-stats {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 1.25rem;
+}
+
+/* --- DISEÑO PARA CELULAR Y TABLET (Móvil) --- */
+@media (max-width: 850px) {
+  .layout-principal {
+    flex-direction: column !important; /* El menú se va para arriba */
+  }
+
+  .sidebar-pro {
+    width: 100% !important;
+    height: auto !important;
+    padding: 1rem !important;
+    position: relative !important;
+  }
+
+  .grid-stats {
+    grid-template-columns: 1fr 1fr !important; /* Dos tarjetas por fila en celular */
+  }
+
+  .main-content {
+    padding: 1rem !important;
+  }
+
+  /* Escondemos cosas menos importantes en la tabla para que quepa el nombre */
+  .col-fecha, .col-tipo {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-stats {
+    grid-template-columns: 1fr !important; /* Una sola tarjeta por fila en celular pequeño */
+  }
+}
