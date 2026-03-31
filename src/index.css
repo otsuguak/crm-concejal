@@ -109,3 +109,497 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* =========================================
+   1. RESET GLOBAL (ELIMINA LOS BORDES DE VITE)
+   ========================================= */
+html, body, #root {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 100%;
+  max-width: none !important; /* Quita el max-width de Vite */
+  overflow-x: hidden; /* Adiós al scroll horizontal */
+}
+
+/* =========================================
+   2. ESTILOS DEL LOGIN PRO (SPLIT SCREEN)
+   ========================================= */
+.login-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
+/* Panel Izquierdo Institucional (Solo visible en PC/Tablet) */
+.login-banner {
+  flex: 1;
+  background: linear-gradient(135deg, #0A2540 0%, #14467B 50%, #00A6FB 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; /* Centrado perfecto */
+  padding: 4rem;
+  position: relative;
+  text-align: center;
+}
+
+.login-banner-content {
+  position: relative;
+  z-index: 1;
+  max-width: 500px;
+}
+
+.login-title-main {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  color: #ffffff;
+}
+
+.login-subtitle {
+  font-size: 1.2rem;
+  font-weight: 300;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* Panel Derecho (Formulario) */
+.login-form-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #f8fafc; /* Gris súper sutil para contrastar con la tarjeta en móviles */
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background-color: #ffffff;
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); /* Sombra elegante */
+}
+
+.login-card h2 {
+  font-size: 2rem;
+  color: #0A2540;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.login-card p {
+  color: #64748b;
+  margin-bottom: 2.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left; /* Asegura que las etiquetas queden alineadas */
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-color: #f8fafc;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #00A6FB;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 166, 251, 0.15);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 1rem;
+  background-color: #00A6FB;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.btn-primary:hover {
+  background-color: #008cd4;
+  box-shadow: 0 4px 12px rgba(0, 166, 251, 0.3);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.error-message {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* =========================================
+   3. RESPONSIVE (MÓVILES Y TABLETS)
+   ========================================= */
+@media (max-width: 850px) {
+  /* En pantallas pequeñas, ocultamos el banner gigante */
+  .login-banner {
+    display: none; 
+  }
+  
+  /* El fondo de la sección derecha se vuelve el fondo de la app */
+  .login-form-section {
+    background: linear-gradient(135deg, #0A2540 0%, #14467B 100%);
+    padding: 1rem;
+  }
+
+  /* La tarjeta de login se vuelve el centro de atención flotante */
+  .login-card {
+    max-width: 100%;
+    padding: 2.5rem 1.5rem;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  }
+}
+
+/* =========================================
+   ESTILOS DEL ENLACE DE REGISTRO
+   ========================================= */
+.register-link-container {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #64748b;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.5rem;
+}
+
+.register-link-container p {
+  margin: 0;
+}
+
+.register-link-container a {
+  color: #00A6FB;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.register-link-container a:hover {
+  color: #14467B;
+  text-decoration: underline;
+}
+
+/* =========================================
+   MODAL DE REGISTRO (VENTANA EMERGENTE)
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(10, 37, 64, 0.85); /* Azul institucional transparente */
+  backdrop-filter: blur(8px); /* Efecto cristal moderno */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.modal-card {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 450px;
+  border-radius: 20px;
+  padding: 2.5rem;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out; /* Animación de entrada suave */
+}
+
+.btn-close-modal {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #f1f5f9;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: bold;
+  color: #64748b;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-close-modal:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: scale(1.1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ajuste al botón del enlace para que parezca un link */
+.btn-link {
+  background: none;
+  border: none;
+  color: #00A6FB;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.95rem;
+  margin-left: 0.5rem;
+}
+.btn-link:hover {
+  color: #14467B;
+  text-decoration: underline;
+}
+/* =========================================
+   NOTIFICACIÓN DE ÉXITO (TOAST PRO)
+   ========================================= */
+.toast-exito {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+  font-weight: 700;
+  font-size: 1.1rem;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* nuevos estilos de dashboard 
+
+/* =========================================
+   NUEVO LAYOUT ADMIN (ESTILO CRM MODERNO)
+   ========================================= */
+
+/* Contenedor principal que divide la pantalla en 2 (Sidebar y Contenido) */
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  background-color: #f1f5f9; /* Gris muy suave, elegante */
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* 1. BARRA LATERAL (SIDEBAR) */
+.admin-sidebar {
+  width: 260px;
+  background-color: #0f172a; /* Azul noche profundo, muy sobrio */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+}
+
+.sidebar-logo {
+  font-size: 1.25rem;
+  font-weight: 800;
+  padding: 0 1.5rem 2rem 1.5rem;
+  border-bottom: 1px solid #1e293b;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-logo span {
+  background: #ef4444; /* Rojo institucional pero moderno */
+  color: white;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0 1rem;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.sidebar-menu li {
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #94a3b8;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-menu li:hover, .sidebar-menu li.active {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
+.sidebar-logout {
+  margin: 0 1rem;
+  padding: 0.8rem 1rem;
+  color: #fca5a5;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-logout:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* 2. CONTENIDO PRINCIPAL */
+.admin-main {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 2rem 3rem;
+}
+
+.admin-header h1 {
+  font-size: 1.8rem;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+.admin-header p {
+  color: #64748b;
+  margin: 0 0 2rem 0;
+}
+
+/* 3. TARJETAS DE ESTADÍSTICAS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border-top: 4px solid;
+}
+
+.stat-card.blue { border-color: #3b82f6; }
+.stat-card.yellow { border-color: #f59e0b; }
+.stat-card.green { border-color: #10b981; }
+
+.stat-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* 4. SECCIÓN DE LA TABLA Y BUSCADOR */
+.table-module {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.search-bar {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  outline: none;
+  font-size: 0.95rem;
+  background-color: #f8fafc;
+  transition: all 0.2s;
+}
+
+.search-bar:focus {
+  border-color: #3b82f6;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 1rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.admin-table td {
+  padding: 1rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}

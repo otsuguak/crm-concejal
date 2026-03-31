@@ -1,26 +1,25 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Inicio from './pages/Inicio';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
+// 1. IMPORTA LA NUEVA PÁGINA
+import Registro from './pages/Registro'; 
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        {/* La ruta principal (Cuando entran a la página normal) */}
         <Route path="/" element={<Inicio />} />
-        
-        {/* La ruta del candado */}
         <Route path="/login" element={<Login />} />
         
-        {/* La ruta de la oficina privada */}
+        {/* 2. AGREGA LA RUTA DE REGISTRO */}
+        <Route path="/registro" element={<Registro />} />
+        
         <Route path="/admin" element={<Admin />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
-
-
 
 export default App;
 

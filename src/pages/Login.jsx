@@ -1,90 +1,209 @@
 import { useState } from 'react';
 import { supabase } from '../supabase';
-import { useNavigate } from 'react-router-dom'; // Nuestro "taxista" para cambiar de página
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
-  const [correo, setCorreo] = useState('');
+  // ESTADOS DEL LOGIN
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [nombre, setNombre] = useState(''); // Solo se usa al registrarse
-  const [esRegistro, setEsRegistro] = useState(false); // Para cambiar entre Entrar o Registrarse
+  const [error, setError] = useState(null);
   const [cargando, setCargando] = useState(false);
   
-  const navigate = useNavigate(); // Inicializamos el taxista
+  // ESTADOS DEL MODAL DE REGISTRO
+  const [mostrarRegistro, setMostrarRegistro] = useState(false);
+  const [regNombre, setRegNombre] = useState('');
+  const [regTelefono, setRegTelefono] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regCodigo, setRegCodigo] = useState(''); 
+  const [regError, setRegError] = useState(null);
+  const [regCargando, setRegCargando] = useState(false);
+  
+  // ESTADO DE LA NOTIFICACIÓN PREMIUM
+  const [mensajeExito, setMensajeExito] = useState(false); 
 
-  async function manejarAcceso(evento) {
-    evento.preventDefault();
+  const navigate = useNavigate();
+
+  // Función para Iniciar Sesión
+  const handleLogin = async (e) => {
+    e.preventDefault();
     setCargando(true);
+    setError(null);
 
-    if (esRegistro) {
-      // --- RUTA 1: REGISTRAR UN NUEVO COLABORADOR ---
-      const { data, error } = await supabase.auth.signUp({
-        email: correo,
-        password: password,
-      });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-      if (error) {
-        alert("Error al registrar: " + error.message);
-      } else if (data.user) {
-        // Si se crea en Supabase, lo anotamos en nuestra tabla de perfiles con rol "colaborador" por defecto
-        await supabase.from('perfiles').insert([
-          { id: data.user.id, correo: correo, nombre: nombre, rol: 'asesor' }
-        ]);
-        alert("¡Registro exitoso! Pídele al Administrador que te asigne tareas.");
-        setEsRegistro(false); // Lo devolvemos a la pantalla de iniciar sesión
-      }
-
+    if (error) {
+      setError('Correo o contraseña incorrectos. Intenta de nuevo.');
+      setCargando(false);
     } else {
-      // --- RUTA 2: INICIAR SESIÓN ---
-      const { error } = await supabase.auth.signInWithPassword({
-        email: correo,
-        password: password,
+      navigate('/admin');
+    }
+  };
+
+  // Función para Crear Cuenta Nueva (BLINDADA)
+  const handleRegistro = async (e) => {
+    e.preventDefault();
+    setRegCargando(true);
+    setRegError(null);
+
+    // 1. ESCUDO (Exigimos el código de ingreso)
+    if (!regNombre.trim() || !regTelefono.trim() || !regEmail.trim() || !regPassword.trim() || !regCodigo.trim()) {
+      setRegError('Pilas: Todos los campos son obligatorios.');
+      setRegCargando(false);
+      return; 
+    }
+
+    if (regPassword.length < 6) {
+      setRegError('La contraseña debe tener mínimo 6 caracteres.');
+      setRegCargando(false);
+      return;
+    }
+
+    try {
+      // 2. Creamos el usuario en Autenticación
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: regEmail,
+        password: regPassword,
       });
 
-      if (error) {
-        alert("Correo o contraseña incorrectos.");
-      } else {
-        // ¡La llave funcionó! Lo mandamos a la oficina privada
-        navigate('/admin');
+      if (authError) throw authError;
+
+      // 3. ¡EL INSERT DEFINITIVO!
+      if (authData.user) {
+        const { error: profileError } = await supabase.from('perfiles').insert([
+          {
+            id: authData.user.id,
+            nombre: regNombre,
+            telefono: regTelefono,
+            correo: regEmail,
+            codigo_ingreso: regCodigo,
+            rol: 'asesor' 
+          }
+        ]);
+
+        if (profileError) {
+          const errorDetallado = JSON.stringify(profileError, null, 2);
+          console.error("Error BD Detallado:", errorDetallado);
+          alert("ERROR DE BASE DE DATOS:\n" + errorDetallado);
+          throw new Error("Fallo en la inserción del perfil.");
+        }
+        
+        // ==========================================
+        // AQUÍ ESTÁ EL CAMBIO PARA EL MENSAJE BONITO
+        // ==========================================
+        setMensajeExito(true); 
+        
+        setTimeout(() => {
+          setMostrarRegistro(false); 
+          setRegNombre(''); setRegTelefono(''); setRegEmail(''); setRegPassword(''); setRegCodigo('');
+          navigate('/admin'); 
+        }, 2000); 
       }
+    } catch (err) {
+      setRegError('Error: ' + err.message);
+    } finally {
+      setRegCargando(false);
     }
-    setCargando(false);
-  }
+  };
 
   return (
-    <div style={{ padding: '50px 20px', fontFamily: 'Arial', maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
-      <div style={{ backgroundColor: '#f4f4f4', padding: '30px', borderRadius: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)', color: 'black' }}>
-        
-        <h2>{esRegistro ? '👤 Nuevo Colaborador' : '🔐 Iniciar Sesión'}</h2>
-        <p>{esRegistro ? 'Crea tu cuenta para el CRM' : 'Ingresa a la Torre de Control'}</p>
-
-        <form onSubmit={manejarAcceso} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
-          
-          {/* El campo Nombre solo aparece si se están registrando */}
-          {esRegistro && (
-            <input type="text" placeholder="Tu Nombre Completo" value={nombre} onChange={(e) => setNombre(e.target.value)} required style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
-          )}
-
-          <input type="email" placeholder="Correo Electrónico" value={correo} onChange={(e) => setCorreo(e.target.value)} required style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
-          
-          <input type="password" placeholder="Contraseña (mínimo 6 letras/números)" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
-
-          <button type="submit" disabled={cargando} style={{ padding: '12px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}>
-            {cargando ? '⏳ Cargando...' : (esRegistro ? 'Registrarme' : 'Entrar al CRM')}
-          </button>
-        </form>
-
-        {/* Botón para cambiar entre Iniciar Sesión y Registrarse */}
-        <p style={{ marginTop: '20px', fontSize: '14px' }}>
-          {esRegistro ? '¿Ya tienes cuenta?' : '¿Eres nuevo en el equipo?'}
-          <button 
-            onClick={() => setEsRegistro(!esRegistro)} 
-            style={{ background: 'none', border: 'none', color: '#007BFF', cursor: 'pointer', fontWeight: 'bold', marginLeft: '5px' }}
-          >
-            {esRegistro ? 'Inicia Sesión aquí' : 'Regístrate aquí'}
-          </button>
-        </p>
-
+    <div className="login-wrapper">
+      
+      {/* LADO IZQUIERDO: Branding Institucional */}
+      <div className="login-banner">
+        <div className="login-banner-content">
+          <h1 className="login-title-main">Torre de Control <br/> Territorial.</h1>
+          <p className="login-subtitle">
+            Sistema Integrado de Gestión y Gobernanza. 
+            Administra casos, equipo y comunicación ciudadana desde un solo lugar.
+          </p>
+        </div>
       </div>
+
+      {/* LADO DERECHO: Formulario de Acceso */}
+      <div className="login-form-section">
+        <div className="login-card">
+          <h2>Iniciar Sesión</h2>
+          <p>Ingresa tus credenciales para acceder al CRM.</p>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label>Correo Electrónico</label>
+              <input type="email" placeholder="ejemplo@mosquera.gov.co" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+
+            <div className="form-group">
+              <label>Contraseña</label>
+              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={cargando}>
+              {cargando ? 'Verificando credenciales...' : 'Entrar al Sistema'}
+            </button>
+          </form>
+
+          {/* Botón que abre el modal */}
+          <div className="register-link-container">
+            <p>¿Eres nuevo en el equipo? <button type="button" className="btn-link" onClick={() => setMostrarRegistro(true)}>Regístrate aquí</button></p>
+          </div>
+        </div>
+      </div>
+
+      {/* MODAL DE REGISTRO EMERGENTE */}
+      {mostrarRegistro && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <button className="btn-close-modal" onClick={() => setMostrarRegistro(false)}>✕</button>
+            <h2 style={{ fontSize: '1.8rem', color: '#0A2540', marginBottom: '0.5rem', marginTop: 0 }}>Crear Cuenta</h2>
+            <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Ingresa tus datos para unirte al CRM.</p>
+
+            {regError && <div className="error-message">{regError}</div>}
+
+            <form onSubmit={handleRegistro}>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Nombre Completo</label>
+                <input type="text" placeholder="Ej. Cesar Leal" value={regNombre} onChange={(e) => setRegNombre(e.target.value)} required />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Teléfono (WhatsApp)</label>
+                <input type="tel" placeholder="Ej. 320 000 0000" value={regTelefono} onChange={(e) => setRegTelefono(e.target.value)} required />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Correo Electrónico</label>
+                <input type="email" placeholder="ejemplo@mosquera.gov.co" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Código de Ingreso (Seguridad)</label>
+                <input type="text" placeholder="Ej. CONCEJAL2026" value={regCodigo} onChange={(e) => setRegCodigo(e.target.value)} required />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label>Contraseña</label>
+                <input type="password" placeholder="Mínimo 6 caracteres" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength="6" />
+              </div>
+
+              <button type="submit" className="btn-primary" disabled={regCargando}>
+                {regCargando ? 'Registrando usuario...' : 'Crear mi cuenta'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================
+          AQUÍ ESTÁ LA NOTIFICACIÓN VISUAL FLOTANTE
+          ========================================= */}
+      {mensajeExito && (
+        <div className="toast-exito">
+          ✅ ¡Cuenta creada con éxito! Ingresando a la Torre de Control...
+        </div>
+      )}
+
     </div>
   );
 }

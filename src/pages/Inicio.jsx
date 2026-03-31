@@ -17,12 +17,20 @@ export default function Inicio() {
 
   useEffect(() => {
     async function cargarPortal() {
-      const { data: n } = await supabase.from('noticias').select('*').order('id', { ascending: false });
+      // AQUÍ ESTÁ LA MAGIA: .eq('visible', true) filtra las apagadas
+      const { data: n } = await supabase
+        .from('noticias')
+        .select('*')
+        .eq('visible', true) 
+        .order('id', { ascending: false });
+        
       setNoticias(n || []);
+      
       const { data: t } = await supabase.from('tipos_solicitud').select('*');
       setTiposSolicitud(t || []);
       if (t?.length > 0) setTipoId(t[0].id);
     }
+    
     cargarPortal();
   }, []);
 
