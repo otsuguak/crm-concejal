@@ -156,6 +156,21 @@
 }
 
 /* =========================================
+   ESTILOS SEMAFORIZACIÓN (SLA - TIEMPOS) -> NUEVO
+   ========================================= */
+.fila-vencida td {
+  background-color: #fee2e2 !important; /* Fondo rojo clarito */
+  color: #991b1b !important;
+  border-bottom: 1px solid #f87171 !important;
+}
+
+.fila-alerta td {
+  background-color: #fef3c7 !important; /* Fondo amarillo clarito */
+  color: #92400e !important;
+  border-bottom: 1px solid #fbbf24 !important;
+}
+
+/* =========================================
    NUEVO LAYOUT ADMIN (ESTILO CRM MODERNO)
    ========================================= */
 .admin-layout {
@@ -251,21 +266,23 @@
 }
 
 /* =========================================
-   ADAPTACIÓN PARA CELULARES (RESPONSIVE)
+   ADAPTACIÓN PARA CELULARES (RESPONSIVE) - MEJORADA
    ========================================= */
 
 @media (max-width: 768px) {
-  /* 1. La estructura pasa de estar lado a lado, a estar una encima de otra */
+  /* 1. Layout Principal */
   .admin-layout {
     flex-direction: column;
+    min-height: 100vh; /* Evita que el fondo gris se corte si hay muy pocos casos */
     height: auto;
   }
 
-  /* 2. El sidebar se vuelve un menú superior compacto */
+  /* 2. Sidebar / Menú Superior */
   .admin-sidebar {
     width: 100%;
     padding: 1rem;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-sizing: border-box; /* Previene que el padding sume ancho extra y genere scroll horizontal general */
   }
 
   /* 3. Ajustar márgenes del contenido principal */
@@ -273,29 +290,42 @@
     padding: 1.5rem 1rem;
   }
 
-  /* 4. Tablas amigables en móvil (Scroll horizontal con el dedo) */
+  /* 4. Tablas amigables en móvil */
   .table-module {
     padding: 1rem;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    -webkit-overflow-scrolling: touch; /* Hace que el scroll en iPhone sea suave */
+    box-sizing: border-box;
   }
   
   .admin-table {
-    min-width: 600px; /* Obliga a la tabla a no espicharse, creando el scroll */
+    min-width: 600px;
   }
 
-  /* 5. Modales flotantes perfectos para celular */
+  /* 5. Modales flotantes (¡Cuidado con el scroll interno!) */
   div[style*="maxWidth: '1000px'"], 
   div[style*="maxWidth: '650px'"], 
   div[style*="maxWidth: '550px'"] {
     width: 95% !important;
     padding: 20px !important;
-    max-height: 90vh !important;
+    max-height: 85vh !important; /* Bajamos de 90 a 85 para dar margen al navegador del celular */
+    overflow-y: auto !important; /* CRÍTICO: Si el formulario es largo, permite hacer scroll adentro del modal */
+    margin: 10px auto !important;
+    box-sizing: border-box !important;
   }
 
-  /* Botones grandes en celular para no equivocarse con el dedo */
-  .btn-gestionar-pro, button {
-    padding: 12px !important;
-    font-size: 0.9rem !important;
+  /* 6. Botones (Protegiendo los botones pequeños) */
+  .btn-gestionar-pro, 
+  button[type="submit"] {
+    padding: 14px !important; /* Más alto para que el dedo no falle */
+    font-size: 1rem !important;
+    width: 100%; /* Los botones principales ocuparán todo el ancho en celular */
+  }
+
+  /* EXCEPCIÓN: Protegemos los botones redondos de cerrar "X" para que no se deformen */
+  button[style*="width: '40px'"],
+  button[style*="width:'40px'"] {
+    width: 40px !important;
+    padding: 0 !important;
   }
 }
