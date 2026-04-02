@@ -25,18 +25,22 @@ export default function Admin() {
   const [mostrarModalSeguridad, setMostrarModalSeguridad] = useState(false);
   const [mostrarModalCategorias, setMostrarModalCategorias] = useState(false);
   const [mostrarModalTextos, setMostrarModalTextos] = useState(false);
+  const [mostrarModalBio, setMostrarModalBio] = useState(false); 
 
   const [confSeguridad, setConfSeguridad] = useState({ requiere: true, codigo: '' });
   const [confListas, setConfListas] = useState({ pqrsf: [], subcat: [], nuevoPqrsf: '', nuevaSubcat: '' });
   
-  // 🔥 ESTADO DE TEXTOS ACTUALIZADO CON TÍTULOS DE REDES 🔥
   const [confTextos, setConfTextos] = useState({ 
-    tituloHero: '', descHero: '', 
-    tituloForm: '', descForm: '', 
-    tituloNoticias: '', descNoticias: '',
-    tituloRedes: '', descRedes: '',
-    urlFacebook: '', urlInstagram: '', urlTiktok: ''
+    tituloHero: '', descHero: '', tituloForm: '', descForm: '', tituloNoticias: '', descNoticias: '',
+    tituloRedes: '', descRedes: '', urlFacebook: '', urlInstagram: '', urlTiktok: ''
   });
+
+  const [confBio, setConfBio] = useState({
+    titulo: '', descripcion: '', videoUrl: '', foto1Actual: '', foto2Actual: '', label: '',
+    foto2Descripcion: '' // 🔥 NUEVO CAMPO 🔥
+  });
+  const [archivoBio1, setArchivoBio1] = useState(null);
+  const [archivoBio2, setArchivoBio2] = useState(null);
 
   const [colaboradorAsignado, setColaboradorAsignado] = useState('');
   const [toastMsg, setToastMsg] = useState('');
@@ -94,6 +98,13 @@ export default function Admin() {
             tituloRedes: configData.titulo_redes || '', descRedes: configData.descripcion_redes || '',
             urlFacebook: configData.url_facebook || '', urlInstagram: configData.url_instagram || '', urlTiktok: configData.url_tiktok || ''
           });
+
+          setConfBio({
+            titulo: configData.bio_titulo || '', descripcion: configData.bio_descripcion || '', 
+            videoUrl: configData.bio_video_url || '', foto1Actual: configData.bio_foto_1 || '', foto2Actual: configData.bio_foto_2 || '',
+            label: configData.bio_label || 'PERFIL TERRITORIAL',
+            foto2Descripcion: configData.bio_foto_2_descripcion || '' // 🔥 CARGAR NUEVO CAMPO 🔥
+          });
         }
       }
       
@@ -111,107 +122,49 @@ export default function Admin() {
   }
 
   const mostrarExito = (mensaje) => { setToastMsg(mensaje); setTimeout(() => { setToastMsg(''); }, 3000); };
+  const subirArchivo = async (file, bucket) => { if (!file) return null; const name = `${Date.now()}-${file.name.replace(/\s/g, '_')}`; const { error } = await supabase.storage.from(bucket).upload(name, file); if (error) throw error; return supabase.storage.from(bucket).getPublicUrl(name).data.publicUrl; };
 
-  const guardarConfigSeguridad = async (e) => {
-    e.preventDefault(); setSubiendo(true);
-    try {
-      const { error } = await supabase.from('configuracion').update({ requiere_codigo: confSeguridad.requiere, codigo_secreto_registro: confSeguridad.codigo }).eq('id', 1);
-      if (error) throw error;
-      mostrarExito("¡Seguridad del portal actualizada!"); setMostrarModalSeguridad(false); cargarTodo();
-    } catch (err) { alert("Error: " + err.message); }
-    setSubiendo(false);
-  };
+  const guardarConfigSeguridad = async (e) => { e.preventDefault(); setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ requiere_codigo: confSeguridad.requiere, codigo_secreto_registro: confSeguridad.codigo }).eq('id', 1); if (error) throw error; mostrarExito("¡Seguridad del portal actualizada!"); setMostrarModalSeguridad(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
+  const guardarConfigCategorias = async () => { setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ lista_pqrsf: confListas.pqrsf, lista_subcategorias: confListas.subcat }).eq('id', 1); if (error) throw error; mostrarExito("¡Categorías actualizadas en el portal!"); setMostrarModalCategorias(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
+  const guardarConfigTextos = async (e) => { e.preventDefault(); setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ titulo_hero: confTextos.tituloHero, descripcion_hero: confTextos.descHero, titulo_formulario: confTextos.tituloForm, descripcion_formulario: confTextos.descForm, titulo_noticias: confTextos.tituloNoticias, descripcion_noticias_seccion: confTextos.descNoticias, titulo_redes: confTextos.tituloRedes, descripcion_redes: confTextos.descRedes, url_facebook: confTextos.urlFacebook, url_instagram: confTextos.urlInstagram, url_tiktok: confTextos.urlTiktok }).eq('id', 1); if (error) throw error; mostrarExito("¡Textos y Redes del portal actualizados!"); setMostrarModalTextos(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
 
-  const guardarConfigCategorias = async () => {
+  const guardarConfigBio = async (e) => {
+    e.preventDefault();
     setSubiendo(true);
     try {
-      const { error } = await supabase.from('configuracion').update({ lista_pqrsf: confListas.pqrsf, lista_subcategorias: confListas.subcat }).eq('id', 1);
-      if (error) throw error;
-      mostrarExito("¡Categorías actualizadas en el portal!"); setMostrarModalCategorias(false); cargarTodo();
-    } catch (err) { alert("Error: " + err.message); }
-    setSubiendo(false);
-  };
+      const urlFoto1 = archivoBio1 ? await subirArchivo(archivoBio1, 'noticias') : confBio.foto1Actual;
+      const urlFoto2 = archivoBio2 ? await subirArchivo(archivoBio2, 'noticias') : confBio.foto2Actual;
 
-  const guardarConfigTextos = async (e) => {
-    e.preventDefault(); setSubiendo(true);
-    try {
       const { error } = await supabase.from('configuracion').update({
-        titulo_hero: confTextos.tituloHero, descripcion_hero: confTextos.descHero,
-        titulo_formulario: confTextos.tituloForm, descripcion_formulario: confTextos.descForm,
-        titulo_noticias: confTextos.tituloNoticias, descripcion_noticias_seccion: confTextos.descNoticias,
-        titulo_redes: confTextos.tituloRedes, descripcion_redes: confTextos.descRedes,
-        url_facebook: confTextos.urlFacebook, url_instagram: confTextos.urlInstagram, url_tiktok: confTextos.urlTiktok
+        bio_titulo: confBio.titulo,
+        bio_descripcion: confBio.descripcion,
+        bio_video_url: confBio.videoUrl,
+        bio_foto_1: urlFoto1,
+        bio_foto_2: urlFoto2,
+        bio_label: confBio.label,
+        bio_foto_2_descripcion: confBio.foto2Descripcion // 🔥 GUARDAR NUEVO CAMPO 🔥
       }).eq('id', 1);
+
       if (error) throw error;
-      mostrarExito("¡Textos y Redes del portal actualizados!"); setMostrarModalTextos(false); cargarTodo();
-    } catch (err) { alert("Error: " + err.message); }
+      mostrarExito("¡Biografía del Concejal actualizada con éxito!");
+      setMostrarModalBio(false);
+      setArchivoBio1(null); setArchivoBio2(null);
+      cargarTodo();
+    } catch (err) { alert("Error al guardar Biografía: " + err.message); }
     setSubiendo(false);
   };
 
   const abrirParaCrear = () => { setIdEdicion(null); setTitulo(''); setDescripcion(''); setVideoUrl(''); setArchivoAntes(null); setArchivoDespues(null); setMostrarModalFormNoticia(true); };
   const abrirParaEditar = (n) => { setIdEdicion(n.id); setTitulo(n.titulo); setDescripcion(n.descripcion); setVideoUrl(n.video_url || ''); setMostrarModalFormNoticia(true); };
-  const subirArchivo = async (file, bucket) => { if (!file) return null; const name = `${Date.now()}-${file.name.replace(/\s/g, '_')}`; const { error } = await supabase.storage.from(bucket).upload(name, file); if (error) throw error; return supabase.storage.from(bucket).getPublicUrl(name).data.publicUrl; };
   
-  const guardarNoticia = async (e) => {
-    e.preventDefault(); setSubiendo(true); 
-    try {
-      const urlA = archivoAntes ? await subirArchivo(archivoAntes, 'noticias') : null;
-      const urlD = archivoDespues ? await subirArchivo(archivoDespues, 'noticias') : null;
-      const datos = { titulo, descripcion, video_url: videoUrl };
-      if (urlA) datos.imagen_1_antes = urlA; if (urlD) datos.imagen_1_despues = urlD;
-      if (idEdicion) {
-        await supabase.from('noticias').update(datos).eq('id', idEdicion); mostrarExito("¡Logro actualizado correctamente!");
-      } else {
-        if (!archivoAntes || !archivoDespues) throw new Error("Las fotos Antes/Después son obligatorias.");
-        datos.imagen_1_antes = urlA; datos.imagen_1_despues = urlD;
-        await supabase.from('noticias').insert([datos]); mostrarExito("¡Nueva gestión publicada con éxito!");
-      }
-      setMostrarModalFormNoticia(false); cargarTodo();
-    } catch (err) { alert("Error: " + err.message); }
-    setSubiendo(false); 
-  };
-
-  const eliminarNoticia = async (noticia) => {
-    if (window.confirm("¿Estás seguro de borrar este logro?")) {
-      setSubiendo(true); 
-      try {
-       const extraerNombre = (url) => { if (!url) return null; try { const urlObj = new URL(url); const pathParts = urlObj.pathname.split('/'); return decodeURIComponent(pathParts[pathParts.length - 1]); } catch (error) { return null; } };
-        const imgA = extraerNombre(noticia.imagen_1_antes); const imgD = extraerNombre(noticia.imagen_1_despues);
-        const archivosABorrar = [imgA, imgD].filter(Boolean);
-        if (archivosABorrar.length > 0) { await supabase.storage.from('noticias').remove(archivosABorrar); }
-        await supabase.from('noticias').delete().eq('id', noticia.id); mostrarExito("¡Logro eliminado del sistema!"); cargarTodo();
-      } catch (error) { alert("Error al borrar: " + error.message); }
-      setSubiendo(false); 
-    }
-  };
-
+  const guardarNoticia = async (e) => { e.preventDefault(); setSubiendo(true); try { const urlA = archivoAntes ? await subirArchivo(archivoAntes, 'noticias') : null; const urlD = archivoDespues ? await subirArchivo(archivoDespues, 'noticias') : null; const datos = { titulo, descripcion, video_url: videoUrl }; if (urlA) datos.imagen_1_antes = urlA; if (urlD) datos.imagen_1_despues = urlD; if (idEdicion) { await supabase.from('noticias').update(datos).eq('id', idEdicion); mostrarExito("¡Logro actualizado correctamente!"); } else { if (!archivoAntes || !archivoDespues) throw new Error("Las fotos Antes/Después son obligatorias."); datos.imagen_1_antes = urlA; datos.imagen_1_despues = urlD; await supabase.from('noticias').insert([datos]); mostrarExito("¡Nueva gestión publicada con éxito!"); } setMostrarModalFormNoticia(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
+  const eliminarNoticia = async (noticia) => { if (window.confirm("¿Estás seguro de borrar este logro?")) { setSubiendo(true); try { const extraerNombre = (url) => { if (!url) return null; try { const urlObj = new URL(url); const pathParts = urlObj.pathname.split('/'); return decodeURIComponent(pathParts[pathParts.length - 1]); } catch (error) { return null; } }; const imgA = extraerNombre(noticia.imagen_1_antes); const imgD = extraerNombre(noticia.imagen_1_despues); const archivosABorrar = [imgA, imgD].filter(Boolean); if (archivosABorrar.length > 0) { await supabase.storage.from('noticias').remove(archivosABorrar); } await supabase.from('noticias').delete().eq('id', noticia.id); mostrarExito("¡Logro eliminado del sistema!"); cargarTodo(); } catch (error) { alert("Error al borrar: " + error.message); } setSubiendo(false); } };
   const toggleVisibilidad = async (noticia) => { setSubiendo(true); try { const nuevoEstado = !noticia.visible; await supabase.from('noticias').update({ visible: nuevoEstado }).eq('id', noticia.id); cargarTodo(); } catch (error) { alert("Error al cambiar estado: " + error.message); } setSubiendo(false); };
   const actualizarDiasSLA = async (idTipo, nuevosDias) => { setSubiendo(true); try { await supabase.from('tipos_solicitud').update({ dias_respuesta: parseInt(nuevosDias) || 0 }).eq('id', idTipo); await cargarTodo(); mostrarExito("¡Tiempo de respuesta actualizado!"); } catch (error) { alert("Error al actualizar días: " + error.message); } setSubiendo(false); };
 
-  const calcularColorEstado = (fechaLimiteStr, estadoActual) => {
-    if (estadoActual && estadoActual.toLowerCase() === 'solucionado') return ''; 
-    if (!fechaLimiteStr) return ''; 
-    const hoy = new Date(); const limite = new Date(fechaLimiteStr); const diffDays = Math.ceil((limite.getTime() - hoy.getTime()) / (1000 * 3600 * 24));
-    if (diffDays < 0) { return 'fila-vencida'; } else if (diffDays >= 0 && diffDays <= 2) { return 'fila-alerta'; } return ''; 
-  };
+  const calcularColorEstado = (fechaLimiteStr, estadoActual) => { if (estadoActual && estadoActual.toLowerCase() === 'solucionado') return ''; if (!fechaLimiteStr) return ''; const hoy = new Date(); const limite = new Date(fechaLimiteStr); const diffDays = Math.ceil((limite.getTime() - hoy.getTime()) / (1000 * 3600 * 24)); if (diffDays < 0) { return 'fila-vencida'; } else if (diffDays >= 0 && diffDays <= 2) { return 'fila-alerta'; } return ''; };
 
-  const agregarNotaAlHistorial = async (idCaso) => {
-    if (!respuestaActual.trim()) return; setSubiendo(true);
-    try {
-      const fechaObj = new Date(); const fechaTexto = fechaObj.toLocaleString(); 
-      const nombreAutor = perfil.nombre || (perfil.rol === 'admin' ? 'Administrador' : 'Asesor');
-      const nuevaNota = `[${fechaTexto}] - ${nombreAutor}:\n${respuestaActual}`;
-      const historialPrevio = casoSeleccionado.respuesta_gestion || '';
-      const nuevoHistorialCompleto = historialPrevio ? `${historialPrevio}\n\n=========================\n\n${nuevaNota}` : nuevaNota;
-      const { error } = await supabase.from('casos').update({ respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() }).eq('id', idCaso);
-      if (error) throw error;
-      mostrarExito("¡Anotación agregada al historial!");
-      setCasoSeleccionado(prev => ({ ...prev, respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() }));
-      setRespuestaActual(''); cargarTodo();
-    } catch (err) { alert("Error al guardar nota: " + err.message); }
-    setSubiendo(false);
-  };
-
+  const agregarNotaAlHistorial = async (idCaso) => { if (!respuestaActual.trim()) return; setSubiendo(true); try { const fechaObj = new Date(); const fechaTexto = fechaObj.toLocaleString(); const nombreAutor = perfil.nombre || (perfil.rol === 'admin' ? 'Administrador' : 'Asesor'); const nuevaNota = `[${fechaTexto}] - ${nombreAutor}:\n${respuestaActual}`; const historialPrevio = casoSeleccionado.respuesta_gestion || ''; const nuevoHistorialCompleto = historialPrevio ? `${historialPrevio}\n\n=========================\n\n${nuevaNota}` : nuevaNota; const { error } = await supabase.from('casos').update({ respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Anotación agregada al historial!"); setCasoSeleccionado(prev => ({ ...prev, respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() })); setRespuestaActual(''); cargarTodo(); } catch (err) { alert("Error al guardar nota: " + err.message); } setSubiendo(false); };
   const asignarCaso = async (idCaso) => { if (!colaboradorAsignado) { alert("⚠️ Selecciona un asesor."); return; } setSubiendo(true); try { const { error } = await supabase.from('casos').update({ estado: 'Escalado', colaborador_id: colaboradorAsignado }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Caso escalado!"); setCasoSeleccionado(null); cargarTodo(); } catch (err) { alert("Error al escalar: " + err.message); } setSubiendo(false); };
   const solucionarCaso = async (idCaso) => { if (window.confirm("¿Confirmas que este caso ya fue gestionado?")) { setSubiendo(true); try { const { error } = await supabase.from('casos').update({ estado: 'Solucionado' }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Caso marcado como solucionado!"); setCasoSeleccionado(null); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); } };
 
@@ -251,7 +204,8 @@ export default function Admin() {
               <button onClick={() => setMostrarModalSeguridad(true)} style={btnStyle(false)}>🔐 Cód. Seguridad</button>
               <button onClick={() => setMostrarModalCategorias(true)} style={btnStyle(false)}>📂 Cat. Solicitudes</button>
               <button onClick={() => setMostrarModalTextos(true)} style={btnStyle(false)}>🖥️ Textos y Redes</button>
-            </>
+              <button onClick={() => setMostrarModalBio(true)} style={btnStyle(false)}>👤 Biografía Concejal</button>
+            </    >
           )}
         </nav>
         
@@ -310,25 +264,86 @@ export default function Admin() {
         </div>
       </main>
 
-      {/* 1. MODAL DE SEGURIDAD */}
+      {/* =========================================================================
+          🔥 MODAL: BIOGRAFÍA DEL CONCEJAL (ACTUALIZADO CON CAMPO EXTRA) 🔥
+          ========================================================================= */}
+      {mostrarModalBio && (
+        <div style={overlayStyle}>
+          <div style={{...modalStyle, maxWidth: '800px', maxHeight: '95vh', overflowY: 'auto'}}>
+            <button onClick={()=>setMostrarModalBio(false)} style={closeBtnStyle}>✕</button>
+            <h2 style={modalTitleStyle}>👤 Biografía del Concejal</h2>
+            <p style={modalDescStyle}>Cuenta la historia de Carlos Andrés Pabón al estilo Silicon Valley.</p>
+            
+            <form onSubmit={guardarConfigBio} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+              
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
+                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>1. Título y Perfil</h4>
+                
+                <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Etiqueta Roja (ej. PERFIL TERRITORIAL)</label>
+                <input type="text" value={confBio.label} onChange={e => setConfBio({...confBio, label: e.target.value})} placeholder="Ej. PERFIL TERRITORIAL" style={{...inStyle, marginBottom: '15px'}} required />
+
+                <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Título Gigante</label>
+                <input type="text" value={confBio.titulo} onChange={e => setConfBio({...confBio, titulo: e.target.value})} placeholder="Ej. Conoce a Carlos Andrés Pabón" style={{...inStyle, marginBottom: '15px'}} required />
+                
+                <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Biografía Completa</label>
+                <textarea value={confBio.descripcion} onChange={e => setConfBio({...confBio, descripcion: e.target.value})} placeholder="Escribe aquí toda la historia..." style={{...inStyle, height: '150px', resize: 'vertical'}} required />
+              </div>
+
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
+                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>2. Video Multimedia (Opcional)</h4>
+                <input type="url" value={confBio.videoUrl} onChange={e => setConfBio({...confBio, videoUrl: e.target.value})} placeholder="Link de YouTube o Instagram..." style={inStyle} />
+              </div>
+
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
+                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>3. Galería Fotográfica</h4>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
+                  <div style={{background:'white', padding:'15px', borderRadius:'10px', border:'1px solid #cbd5e1'}}>
+                    <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>📸 FOTO PRINCIPAL:</label>
+                    <input type="file" onChange={e=>setArchivoBio1(e.target.files[0])} style={{marginTop:'10px', fontSize:'0.8rem', width:'100%'}}/>
+                    
+                    {confBio.foto1Actual && !archivoBio1 && (
+                        <div style={{marginTop: '10px', display:'flex', alignItems:'center', gap:'10px'}}>
+                            <img src={confBio.foto1Actual} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius:'8px'}} />
+                            <span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Foto asignada</span>
+                        </div>
+                    )}
+                  </div>
+                  <div style={{background:'white', padding:'15px', borderRadius:'10px', border:'1px solid #cbd5e1'}}>
+                    <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>📸 FOTO SECUNDARIA:</label>
+                    <input type="file" onChange={e=>setArchivoBio2(e.target.files[0])} style={{marginTop:'10px', fontSize:'0.8rem', width:'100%'}}/>
+                    
+                    {confBio.foto2Actual && !archivoBio2 && (
+                        <div style={{marginTop: '10px', display:'flex', alignItems:'center', gap:'10px'}}>
+                            <img src={confBio.foto2Actual} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius:'8px'}} />
+                            <span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Foto asignada</span>
+                        </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 🔥 NUEVO CAMPO: DESCRIPCIÓN FOTO 2 🔥 */}
+                <div style={{marginTop: '20px'}}>
+                  <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Descripción para Foto Secundaria (Opcional)</label>
+                  <textarea value={confBio.foto2Descripcion} onChange={e => setConfBio({...confBio, foto2Descripcion: e.target.value})} placeholder="Escribe un pie de foto o descripción corta..." style={{...inStyle, height: '80px', resize: 'vertical'}} />
+                </div>
+              </div>
+
+              <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Publicar Biografía'}</button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {mostrarModalSeguridad && (
         <div style={overlayStyle}>
           <div style={{...modalStyle, maxWidth: '500px'}}>
             <button onClick={()=>setMostrarModalSeguridad(false)} style={closeBtnStyle}>✕</button>
             <h2 style={modalTitleStyle}>🔐 Seguridad del Sistema</h2>
-            <p style={modalDescStyle}>Controla cómo se registran los nuevos asesores en el portal.</p>
+            <p style={modalDescStyle}>Controla cómo se registran los nuevos asesores.</p>
             <form onSubmit={guardarConfigSeguridad}>
               <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0', marginBottom: '20px'}}>
-                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px'}}>
-                  <label style={{fontWeight: 'bold', color: '#0f172a'}}>¿Exigir código secreto al registrarse?</label>
-                  <label style={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
-                    <input type="checkbox" checked={confSeguridad.requiere} onChange={(e) => setConfSeguridad({...confSeguridad, requiere: e.target.checked})} style={{width: '20px', height: '20px'}} />
-                    <span style={{marginLeft: '10px', color: confSeguridad.requiere ? '#10b981' : '#94a3b8', fontWeight: 'bold'}}>{confSeguridad.requiere ? 'PRENDIDO' : 'APAGADO'}</span>
-                  </label>
-                </div>
-                {confSeguridad.requiere && (
-                  <div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b'}}>Código Actual:</label><input type="text" value={confSeguridad.codigo} onChange={(e) => setConfSeguridad({...confSeguridad, codigo: e.target.value})} placeholder="Ej. Secreto123" required style={inStyle} /></div>
-                )}
+                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px'}}><label style={{fontWeight: 'bold', color: '#0f172a'}}>¿Exigir código secreto al registrarse?</label><label style={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}><input type="checkbox" checked={confSeguridad.requiere} onChange={(e) => setConfSeguridad({...confSeguridad, requiere: e.target.checked})} style={{width: '20px', height: '20px'}} /><span style={{marginLeft: '10px', color: confSeguridad.requiere ? '#10b981' : '#94a3b8', fontWeight: 'bold'}}>{confSeguridad.requiere ? 'PRENDIDO' : 'APAGADO'}</span></label></div>
+                {confSeguridad.requiere && (<div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b'}}>Código Actual:</label><input type="text" value={confSeguridad.codigo} onChange={(e) => setConfSeguridad({...confSeguridad, codigo: e.target.value})} placeholder="Ej. Secreto123" required style={inStyle} /></div>)}
               </div>
               <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Guardar Cambios'}</button>
             </form>
@@ -336,7 +351,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* 2. MODAL DE CATEGORIAS */}
       {mostrarModalCategorias && (
         <div style={overlayStyle}>
           <div style={{...modalStyle, maxWidth: '700px'}}>
@@ -344,86 +358,32 @@ export default function Admin() {
             <h2 style={modalTitleStyle}>📂 Configurar Categorías</h2>
             <p style={modalDescStyle}>Agrega o elimina los tipos de solicitud que verán los ciudadanos.</p>
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px'}}>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
-                <h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Tipos Principales (PQRSF)</h4>
-                <div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px'}}>
-                  {confListas.pqrsf.map((item, idx) => ( <span key={idx} style={{background: '#e0e7ff', color: '#1d4ed8', padding: '5px 10px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px'}}>{item} <button onClick={() => setConfListas({...confListas, pqrsf: confListas.pqrsf.filter((_, i) => i !== idx)})} style={{background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontWeight:'bold'}}>✕</button></span> ))}
-                </div>
-                <div style={{display: 'flex', gap: '5px'}}><input type="text" value={confListas.nuevoPqrsf} onChange={e => setConfListas({...confListas, nuevoPqrsf: e.target.value})} placeholder="Nueva..." style={{...inStyle, padding: '8px'}} /><button onClick={() => { if(confListas.nuevoPqrsf) setConfListas({...confListas, pqrsf: [...confListas.pqrsf, confListas.nuevoPqrsf], nuevoPqrsf: ''}) }} style={{background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer', fontWeight:'bold'}}>+</button></div>
-              </div>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
-                <h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Subcategorías (Temas)</h4>
-                <div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px', maxHeight: '150px', overflowY: 'auto'}}>
-                  {confListas.subcat.map((item, idx) => ( <span key={idx} style={{background: '#fce7f3', color: '#b91c1c', padding: '5px 10px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px'}}>{item} <button onClick={() => setConfListas({...confListas, subcat: confListas.subcat.filter((_, i) => i !== idx)})} style={{background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontWeight:'bold'}}>✕</button></span> ))}
-                </div>
-                <div style={{display: 'flex', gap: '5px'}}><input type="text" value={confListas.nuevaSubcat} onChange={e => setConfListas({...confListas, nuevaSubcat: e.target.value})} placeholder="Nueva subcat..." style={{...inStyle, padding: '8px'}} /><button onClick={() => { if(confListas.nuevaSubcat) setConfListas({...confListas, subcat: [...confListas.subcat, confListas.nuevaSubcat], nuevaSubcat: ''}) }} style={{background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer', fontWeight:'bold'}}>+</button></div>
-              </div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Tipos Principales (PQRSF)</h4><div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px'}}>{confListas.pqrsf.map((item, idx) => ( <span key={idx} style={{background: '#e0e7ff', color: '#1d4ed8', padding: '5px 10px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px'}}>{item} <button onClick={() => setConfListas({...confListas, pqrsf: confListas.pqrsf.filter((_, i) => i !== idx)})} style={{background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontWeight:'bold'}}>✕</button></span> ))}</div><div style={{display: 'flex', gap: '5px'}}><input type="text" value={confListas.nuevoPqrsf} onChange={e => setConfListas({...confListas, nuevoPqrsf: e.target.value})} placeholder="Nueva PQRSF..." style={{...inStyle, padding: '8px'}} /><button onClick={() => { if(confListas.nuevoPqrsf) setConfListas({...confListas, pqrsf: [...confListas.pqrsf, confListas.nuevoPqrsf], nuevoPqrsf: ''}) }} style={{background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer', fontWeight:'bold'}}>+</button></div></div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Subcategorías (Temas)</h4><div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px', maxHeight: '150px', overflowY: 'auto'}}>{confListas.subcat.map((item, idx) => ( <span key={idx} style={{background: '#fce7f3', color: '#b91c1c', padding: '5px 10px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px'}}>{item} <button onClick={() => setConfListas({...confListas, subcat: confListas.subcat.filter((_, i) => i !== idx)})} style={{background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontWeight:'bold'}}>✕</button></span> ))}</div><div style={{display: 'flex', gap: '5px'}}><input type="text" value={confListas.nuevaSubcat} onChange={e => setConfListas({...confListas, nuevaSubcat: e.target.value})} placeholder="Nueva subcat..." style={{...inStyle, padding: '8px'}} /><button onClick={() => { if(confListas.nuevaSubcat) setConfListas({...confListas, subcat: [...confListas.subcat, confListas.nuevaSubcat], nuevaSubcat: ''}) }} style={{background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer', fontWeight:'bold'}}>+</button></div></div>
             </div>
             <button onClick={guardarConfigCategorias} disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Guardar Todas las Categorías'}</button>
           </div>
         </div>
       )}
 
-      {/* 🔥 3. MODAL DE TEXTOS Y REDES SOCIALES (CON NUEVO TÍTULO Y DESC) 🔥 */}
       {mostrarModalTextos && (
         <div style={overlayStyle}>
           <div style={{...modalStyle, maxWidth: '800px', maxHeight: '95vh', overflowY: 'auto'}}>
             <button onClick={()=>setMostrarModalTextos(false)} style={closeBtnStyle}>✕</button>
             <h2 style={modalTitleStyle}>🖥️ Textos y Redes Sociales</h2>
-            <p style={modalDescStyle}>Edita la información pública que ven los ciudadanos al entrar.</p>
-            
+            <p style={modalDescStyle}>Edita la información pública que ven los ciudadanos.</p>
             <form onSubmit={guardarConfigTextos} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
-                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>1. Título Principal (Arriba)</h4>
-                <input type="text" value={confTextos.tituloHero} onChange={e => setConfTextos({...confTextos, tituloHero: e.target.value})} placeholder="Ej. EL CAMBIO SIGUE" style={{...inStyle, marginBottom: '10px'}} required />
-                <textarea value={confTextos.descHero} onChange={e => setConfTextos({...confTextos, descHero: e.target.value})} placeholder="Descripción debajo del título gigante..." style={{...inStyle, height: '60px', resize: 'none'}} required />
-              </div>
-
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
-                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>2. Sección Formulario de PQRSF</h4>
-                <input type="text" value={confTextos.tituloForm} onChange={e => setConfTextos({...confTextos, tituloForm: e.target.value})} placeholder="Ej. VENTANILLA CIUDADANA" style={{...inStyle, marginBottom: '10px'}} required />
-                <textarea value={confTextos.descForm} onChange={e => setConfTextos({...confTextos, descForm: e.target.value})} placeholder="Texto que invita a la gente a radicar..." style={{...inStyle, height: '80px', resize: 'none'}} required />
-              </div>
-
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
-                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>3. Sección de Logros y Gestión</h4>
-                <input type="text" value={confTextos.tituloNoticias} onChange={e => setConfTextos({...confTextos, tituloNoticias: e.target.value})} placeholder="Ej. GESTIÓN EN TERRITORIO" style={{...inStyle, marginBottom: '10px'}} required />
-                <textarea value={confTextos.descNoticias} onChange={e => setConfTextos({...confTextos, descNoticias: e.target.value})} placeholder="Texto explicativo de la sección de noticias..." style={{...inStyle, height: '80px', resize: 'none'}} required />
-              </div>
-
-              {/* 🔥 NUEVA SECCIÓN: TEXTOS DE REDES SOCIALES 🔥 */}
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
-                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>4. Textos de Redes Sociales</h4>
-                <input type="text" value={confTextos.tituloRedes} onChange={e => setConfTextos({...confTextos, tituloRedes: e.target.value})} placeholder="Ej. 📱 ¡Conéctate con el Cambio!" style={{...inStyle, marginBottom: '10px'}} required />
-                <textarea value={confTextos.descRedes} onChange={e => setConfTextos({...confTextos, descRedes: e.target.value})} placeholder="Texto para invitar a seguir las redes..." style={{...inStyle, height: '80px', resize: 'none'}} required />
-              </div>
-
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
-                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>5. Enlaces de Redes Sociales (Opcionales)</h4>
-                <p style={{fontSize: '0.85rem', color: '#64748b', marginTop: '-10px', marginBottom: '15px'}}>Pega el link completo. Si dejas un espacio en blanco, ese botón no aparecerá en el portal.</p>
-                <div style={{display: 'grid', gap: '15px'}}>
-                  <div>
-                    <label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#1877F2', display: 'flex', alignItems: 'center', gap: '5px'}}>📘 Facebook URL</label>
-                    <input type="url" value={confTextos.urlFacebook} onChange={e => setConfTextos({...confTextos, urlFacebook: e.target.value})} placeholder="https://facebook.com/tu_pagina" style={{...inStyle, marginTop: '5px'}} />
-                  </div>
-                  <div>
-                    <label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#E1306C', display: 'flex', alignItems: 'center', gap: '5px'}}>📸 Instagram URL</label>
-                    <input type="url" value={confTextos.urlInstagram} onChange={e => setConfTextos({...confTextos, urlInstagram: e.target.value})} placeholder="https://instagram.com/tu_perfil" style={{...inStyle, marginTop: '5px'}} />
-                  </div>
-                  <div>
-                    <label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#000000', display: 'flex', alignItems: 'center', gap: '5px'}}>🎵 TikTok URL</label>
-                    <input type="url" value={confTextos.urlTiktok} onChange={e => setConfTextos({...confTextos, urlTiktok: e.target.value})} placeholder="https://tiktok.com/@tu_usuario" style={{...inStyle, marginTop: '5px'}} />
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Guardar Textos y Redes'}</button>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>1. Título Principal (Arriba)</h4><input type="text" value={confTextos.tituloHero} onChange={e => setConfTextos({...confTextos, tituloHero: e.target.value})} placeholder="Ej. EL CAMBIO SIGUE" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descHero} onChange={e => setConfTextos({...confTextos, descHero: e.target.value})} placeholder="Descripción debajo..." style={{...inStyle, height: '60px', resize: 'none'}} required /></div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>2. Sección Formulario de PQRSF</h4><input type="text" value={confTextos.tituloForm} onChange={e => setConfTextos({...confTextos, tituloForm: e.target.value})} placeholder="Ej. VENTANILLA CIUDADANA" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descForm} onChange={e => setConfTextos({...confTextos, descForm: e.target.value})} placeholder="Texto que invita a la gente..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>3. Sección de Logros y Gestión</h4><input type="text" value={confTextos.tituloNoticias} onChange={e => setConfTextos({...confTextos, tituloNoticias: e.target.value})} placeholder="Ej. GESTIÓN EN TERRITORIO" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descNoticias} onChange={e => setConfTextos({...confTextos, descNoticias: e.target.value})} placeholder="Texto explicativo..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>4. Textos de Redes Sociales</h4><input type="text" value={confTextos.tituloRedes} onChange={e => setConfTextos({...confTextos, tituloRedes: e.target.value})} placeholder="Ej. 📱 ¡Conéctate!" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descRedes} onChange={e => setConfTextos({...confTextos, descRedes: e.target.value})} placeholder="Texto para invitar..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>5. Enlaces de Redes Sociales</h4><p style={{fontSize: '0.85rem', color: '#64748b', marginTop: '-10px', marginBottom: '15px'}}>Pega el link completo. Si dejas un espacio en blanco, ese botón no aparecerá.</p><div style={{display: 'grid', gap: '15px'}}><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#1877F2', display: 'flex', alignItems: 'center', gap: '5px'}}>📘 Facebook URL</label><input type="url" value={confTextos.urlFacebook} onChange={e => setConfTextos({...confTextos, urlFacebook: e.target.value})} placeholder="https://facebook.com/tu_pagina" style={{...inStyle, marginTop: '5px'}} /></div><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#E1306C', display: 'flex', alignItems: 'center', gap: '5px'}}>📸 Instagram URL</label><input type="url" value={confTextos.urlInstagram} onChange={e => setConfTextos({...confTextos, urlInstagram: e.target.value})} placeholder="https://instagram.com/tu_perfil" style={{...inStyle, marginTop: '5px'}} /></div><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#000000', display: 'flex', alignItems: 'center', gap: '5px'}}>🎵 TikTok URL</label><input type="url" value={confTextos.urlTiktok} onChange={e => setConfTextos({...confTextos, urlTiktok: e.target.value})} placeholder="https://tiktok.com/@tu_usuario" style={{...inStyle, marginTop: '5px'}} /></div></div></div>
+              <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Guardar Textos'}</button>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODALES CLÁSICOS DE GESTIÓN (TIEMPOS, NOTICIAS, CASOS) */}
       {mostrarModalTiempos && (
         <div style={overlayStyle}>
           <div style={{...modalStyle, maxWidth: '800px'}}>
@@ -453,7 +413,7 @@ export default function Admin() {
           <div style={{...modalStyle, maxWidth: '1000px'}}>
             <button onClick={()=>setMostrarModalLogros(false)} style={closeBtnStyle}>✕</button>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-              <div><h2 style={modalTitleStyle}>📢 Gestor de Logros Públicos</h2><p style={modalDescStyle}>Controla qué noticias ve la ciudadanía en tiempo real.</p></div>
+              <div><h2 style={modalTitleStyle}>📢 Gestor de Logros Públicos</h2><p style={modalDescStyle}>Controla qué noticias ve la ciudadanía.</p></div>
               <button onClick={abrirParaCrear} style={{background:'#E30613', color:'white', padding:'10px 20px', border:'none', borderRadius:'10px', fontWeight:'bold', cursor:'pointer', boxShadow:'0 4px 12px rgba(227,6,19,0.3)'}}>+ Nueva Publicación</button>
             </div>
             <div style={{padding:'10px', overflowY:'auto', flexGrow: 1}}>
@@ -463,15 +423,8 @@ export default function Admin() {
                   {noticiasListado.map(n => (
                     <tr key={n.id}>
                       <td style={{padding:'15px 20px'}}><b>{n.titulo}</b></td>
-                      <td style={{padding:'15px 20px', textAlign:'center'}}>
-                        <button onClick={()=>toggleVisibilidad(n)} style={{ background: n.visible ? '#dcfce7' : '#f1f5f9', color: n.visible ? '#166534' : '#64748b', border: n.visible ? '1px solid #bbf7d0' : '1px solid #cbd5e1', padding:'6px 16px', borderRadius:'20px', fontWeight:'bold', cursor:'pointer', fontSize:'0.8rem', transition:'0.3s' }}>
-                          {n.visible ? '🟢 PUBLICADO' : '⚪ OCULTO'}
-                        </button>
-                      </td>
-                      <td style={{padding:'15px 20px', display:'flex', gap:'10px', justifyContent:'flex-end'}}>
-                        <button onClick={()=>abrirParaEditar(n)} style={{background:'#fef3c7', color:'#92400e', border:'none', padding:'8px 16px', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', fontSize:'0.85rem'}}>✏️ Editar</button>
-                        <button onClick={()=>eliminarNoticia(n)} style={{background:'#fee2e2', color:'#991b1b', border:'none', padding:'8px 16px', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', fontSize:'0.85rem'}}>🗑️ Borrar</button>
-                      </td>
+                      <td style={{padding:'15px 20px', textAlign:'center'}}><button onClick={()=>toggleVisibilidad(n)} style={{ background: n.visible ? '#dcfce7' : '#f1f5f9', color: n.visible ? '#166534' : '#64748b', border: n.visible ? '1px solid #bbf7d0' : '1px solid #cbd5e1', padding:'6px 16px', borderRadius:'20px', fontWeight:'bold', cursor:'pointer', fontSize:'0.8rem', transition:'0.3s' }}>{n.visible ? '🟢 PUBLICADO' : '⚪ OCULTO'}</button></td>
+                      <td style={{padding:'15px 20px', display:'flex', gap:'10px', justifyContent:'flex-end'}}><button onClick={()=>abrirParaEditar(n)} style={{background:'#fef3c7', color:'#92400e', border:'none', padding:'8px 16px', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', fontSize:'0.85rem'}}>✏️ Editar</button><button onClick={()=>eliminarNoticia(n)} style={{background:'#fee2e2', color:'#991b1b', border:'none', padding:'8px 16px', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', fontSize:'0.85rem'}}>🗑️ Borrar</button></td>
                     </tr>
                   ))}
                   {noticiasListado.length === 0 && ( <tr><td colSpan="3" style={{textAlign:'center', padding:'3rem', color:'#94a3b8'}}>No hay logros publicados aún.</td></tr> )}
@@ -489,13 +442,13 @@ export default function Admin() {
             <h2 style={modalTitleStyle}>{idEdicion ? '✏️ Editar Logro' : '📢 Publicar Nuevo Logro'}</h2>
             <form onSubmit={guardarNoticia} style={{display:'flex', flexDirection:'column', gap:'18px', marginTop:'25px'}}>
               <input type="text" placeholder="Título de la obra o gestión" value={titulo} onChange={e=>setTitulo(e.target.value)} required style={inStyle} />
-              <textarea placeholder="Describe el impacto de esta gestión territorial..." value={descripcion} onChange={e=>setDescripcion(e.target.value)} required style={{...inStyle, height:'120px'}} />
-              <input type="text" placeholder="Link de Video YouTube o Instagram Reel (Opcional)" value={videoUrl} onChange={e=>setVideoUrl(e.target.value)} style={inStyle} />
+              <textarea placeholder="Describe el impacto..." value={descripcion} onChange={e=>setDescripcion(e.target.value)} required style={{...inStyle, height:'120px'}} />
+              <input type="text" placeholder="Link YouTube/Insta Reel (Opcional)" value={videoUrl} onChange={e=>setVideoUrl(e.target.value)} style={inStyle} />
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
                 <div style={{background:'#f8fafc', padding:'15px', borderRadius:'15px', border:'1px solid #e2e8f0'}}><label style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b'}}>📸 FOTO ANTES:</label><input type="file" onChange={e=>setArchivoAntes(e.target.files[0])} style={{marginTop:'10px', fontSize:'0.8rem', width:'100%'}}/></div>
                 <div style={{background:'#f8fafc', padding:'15px', borderRadius:'15px', border:'1px solid #e2e8f0'}}><label style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b'}}>📸 FOTO DESPUÉS:</label><input type="file" onChange={e=>setArchivoDespues(e.target.files[0])} style={{marginTop:'10px', fontSize:'0.8rem', width:'100%'}}/></div>
               </div>
-              <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? '⏳ SUBIENDO...' : idEdicion ? 'GUARDAR CAMBIOS' : 'PUBLICAR EN EL PORTAL'}</button>
+              <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? '⏳ SUBIENDO...' : idEdicion ? 'GUARDAR CAMBIOS' : 'PUBLICAR log'}</button>
             </form>
           </div>
         </div>
@@ -513,32 +466,32 @@ export default function Admin() {
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
               <div><p style={subTitleStyle}>Ciudadano</p><p style={{margin: 0, fontWeight: 'bold'}}>{casoSeleccionado.ciudadano_nombre}</p></div>
               <div><p style={subTitleStyle}>Contacto</p><p style={{margin: 0, fontWeight: 'bold'}}>{casoSeleccionado.ciudadano_telefono} | {casoSeleccionado.ciudadano_correo}</p></div>
-              <div style={{gridColumn: '1 / -1'}}><p style={subTitleStyle}>Descripción del Caso</p><div style={{background: '#f8fafc', padding: '15px', borderRadius: '10px', fontSize: '0.95rem', color: '#334155'}}>{casoSeleccionado.descripcion_caso || 'Sin descripción detallada.'}</div></div>
+              <div style={{gridColumn: '1 / -1'}}><p style={subTitleStyle}>Descripción del Caso</p><div style={{background: '#f8fafc', padding: '15px', borderRadius: '10px', fontSize: '0.95rem', color: '#334155'}}>{casoSeleccionado.descripcion_caso || 'Sin descripción.'}</div></div>
             </div>
 
             <div style={{marginTop: '25px', marginBottom: '25px', background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
               <h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>💬 Historial de Gestión</h4>
               <div style={{ background: 'white', padding: '15px', borderRadius: '10px', border: '1px solid #cbd5e1', minHeight: '100px', maxHeight: '250px', overflowY: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem', color: '#334155', marginBottom: '15px', lineHeight: '1.5' }}>
-                {casoSeleccionado.respuesta_gestion ? casoSeleccionado.respuesta_gestion : <span style={{color: '#94a3b8', fontStyle: 'italic'}}>Aún no hay anotaciones...</span>}
+                {casoSeleccionado.respuesta_gestion ? casoSeleccionado.respuesta_gestion : <span style={{color: '#94a3b8', fontStyle: 'italic'}}>Aún no hay notas...</span>}
               </div>
               <div style={{display: 'flex', gap: '10px'}}>
-                <input type="text" placeholder="Escribe una nueva nota oficial..." value={respuestaActual} onChange={e => setRespuestaActual(e.target.value)} style={{flex: 1, padding: '12px 15px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem'}} />
-                <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || !respuestaActual.trim()} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '0 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: (!respuestaActual.trim() || subiendo) ? 0.6 : 1}}>➕ Agregar</button>
+                <input type="text" placeholder="Escribe una nota..." value={respuestaActual} onChange={e => setRespuestaActual(e.target.value)} style={{flex: 1, padding: '12px 15px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem'}} />
+                <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || !respuestaActual.trim()} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '0 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: (!respuestaActual.trim() || subiendo) ? 0.6 : 1}}>➕</button>
               </div>
             </div>
 
             <div style={{background: '#f1f5f9', padding: '25px', borderRadius: '15px'}}>
-              <h4 style={{margin: '0 0 15px 0', color: '#0f172a'}}>{perfil.rol === 'admin' ? '⚙️ Asignación y Cierre' : '⚙️ Cierre de Caso'}</h4>
+              <h4 style={{margin: '0 0 15px 0', color: '#0f172a'}}>{perfil.rol === 'admin' ? '⚙️ Escalado' : '⚙️ Cierre'}</h4>
               {perfil.rol === 'admin' && (
                 <div style={{display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '15px'}}>
                   <select value={colaboradorAsignado} onChange={e => setColaboradorAsignado(e.target.value)} style={{flex: 1, padding: '14px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', background: 'white'}}>
-                    <option value="">Seleccione un asesor para escalar...</option>
+                    <option value="">Seleccione asesor...</option>
                     {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                   <button onClick={() => asignarCaso(casoSeleccionado.id)} style={{background: '#f59e0b', color: 'white', padding: '14px 25px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer'}}>Escalar</button>
                 </div>
               )}
-              <button onClick={() => solucionarCaso(casoSeleccionado.id)} style={{width: '100%', background: '#10b981', color: 'white', padding: '16px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', marginTop: '10px'}}>✅ Marcar Caso como Solucionado</button>
+              <button onClick={() => solucionarCaso(casoSeleccionado.id)} style={{width: '100%', background: '#10b981', color: 'white', padding: '16px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', marginTop: '10px'}}>✅ Marcar Solucionado</button>
             </div>
           </div>
          </div>
@@ -547,7 +500,6 @@ export default function Admin() {
   );
 }
 
-// ESTILOS CENTRALIZADOS 
 const overlayStyle = { position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' };
 const modalStyle = { background: 'white', width: '100%', borderRadius: '24px', padding: '40px', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' };
 const closeBtnStyle = { position: 'absolute', top: '25px', right: '25px', border: 'none', background: '#f1f5f9', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', color: '#64748b' };

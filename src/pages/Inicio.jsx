@@ -15,7 +15,8 @@ export default function Inicio() {
       tituloNoticias: 'GESTIÓN EN TERRITORIO', descNoticias: 'Transformando nuestra comunidad con hechos, no palabras.',
       tituloRedes: '📱 ¡Conéctate con el Cambio!', descRedes: 'Únete a nuestra comunidad digital. Entérate en tiempo real de nuestros proyectos, debates y resultados en el municipio. ¡Tu voz también cuenta en nuestras redes!'
     },
-    redes: { facebook: '', instagram: '', tiktok: '' }
+    redes: { facebook: '', instagram: '', tiktok: '' },
+    bio: { titulo: '', descripcion: '', videoUrl: '', foto1: '', foto2: '', label: '', foto2Descripcion: '' } 
   });
 
   const [nombre, setNombre] = useState('');
@@ -24,7 +25,17 @@ export default function Inicio() {
   const [tipoPQRSF, setTipoPQRSF] = useState('');
   const [subcategoria, setSubcategoria] = useState(''); 
   const [descripcion, setDescripcion] = useState('');
+  
+  const [habeasData, setHabeasData] = useState(false);
+  const [publicidad, setPublicidad] = useState(false);
+  const [mostrarModalHabeas, setMostrarModalHabeas] = useState(false);
+
   const [toastMsg, setToastMsg] = useState('');
+  const [mostrarModalBio, setMostrarModalBio] = useState(false);
+  const [fotoBioExpandida, setFotoBioExpandida] = useState(null);
+
+  // 🔥 NUEVO ESTADO PARA EL MENÚ HAMBURGUESA MÓVIL 🔥
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
 
   useEffect(() => {
     async function cargarPortal() {
@@ -39,7 +50,13 @@ export default function Inicio() {
             tituloNoticias: dataConfig.titulo_noticias || 'GESTIÓN EN TERRITORIO', descNoticias: dataConfig.descripcion_noticias_seccion || 'Transformando nuestra comunidad con hechos, no palabras.',
             tituloRedes: dataConfig.titulo_redes || '📱 ¡Conéctate con el Cambio!', descRedes: dataConfig.descripcion_redes || 'Únete a nuestra comunidad digital. Entérate en tiempo real de nuestros proyectos, debates y resultados en el municipio. ¡Tu voz también cuenta en nuestras redes!'
           },
-          redes: { facebook: dataConfig.url_facebook || '', instagram: dataConfig.url_instagram || '', tiktok: dataConfig.url_tiktok || '' }
+          redes: { facebook: dataConfig.url_facebook || '', instagram: dataConfig.url_instagram || '', tiktok: dataConfig.url_tiktok || '' },
+          bio: { 
+            titulo: dataConfig.bio_titulo || '', descripcion: dataConfig.bio_descripcion || '', 
+            videoUrl: dataConfig.bio_video_url || '', foto1: dataConfig.bio_foto_1 || '', foto2: dataConfig.bio_foto_2 || '',
+            label: dataConfig.bio_label || 'PERFIL TERRITORIAL',
+            foto2Descripcion: dataConfig.bio_foto_2_descripcion || '' 
+          }
         });
         
         if (dataConfig.lista_pqrsf?.length > 0) setTipoPQRSF(dataConfig.lista_pqrsf[0]);
@@ -59,6 +76,11 @@ export default function Inicio() {
       const id = match ? match[1] : null;
       return id ? `https://www.instagram.com/p/${id}/embed/` : url;
     }
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^"&?\/\s]{11})/);
+      const id = match ? match[1] : null;
+      return id ? `https://www.youtube.com/embed/${id}` : url;
+    }
     return url;
   };
 
@@ -67,14 +89,22 @@ export default function Inicio() {
     const fechaLim = new Date(); fechaLim.setDate(fechaLim.getDate() + 5); 
 
     const { error } = await supabase.from('casos').insert([{
-      ciudadano_nombre: nombre, ciudadano_telefono: telefono, ciudadano_correo: correo, 
-      asunto_principal: tipoPQRSF, subcategoria: subcategoria, descripcion_caso: descripcion, 
-      fecha_limite: fechaLim.toISOString(), estado: 'ABIERTO' 
+      ciudadano_nombre: nombre, 
+      ciudadano_telefono: telefono, 
+      ciudadano_correo: correo, 
+      asunto_principal: tipoPQRSF, 
+      subcategoria: subcategoria, 
+      descripcion_caso: descripcion, 
+      fecha_limite: fechaLim.toISOString(), 
+      estado: 'ABIERTO',
+      habeas_data: habeasData,
+      recibir_publicidad: publicidad
     }]);
 
     if (!error) {
       setToastMsg("✅ ¡Radicado con éxito! El equipo del #5 está en marcha.");
-      setNombre(''); setTelefono(''); setCorreo(''); setDescripcion('');
+      setNombre(''); setTelefono(''); setCorreo(''); setDescripcion(''); 
+      setHabeasData(false); setPublicidad(false); 
       if (config.listaPQRSF.length > 0) setTipoPQRSF(config.listaPQRSF[0]);
       if (config.listaSubcategorias.length > 0) setSubcategoria(config.listaSubcategorias[0]);
       setTimeout(() => { setToastMsg(''); }, 4000);
@@ -87,7 +117,6 @@ export default function Inicio() {
       
       {toastMsg && ( <div className="toast-exito" style={{ zIndex: 9999 }}>{toastMsg}</div> )}
 
-      {/* 🔥 ESTILOS MÁGICOS: RESPONSIVE DESIGN (MÓVILES) 🔥 */}
       <style>{`
         html { scroll-behavior: smooth; }
         * { box-sizing: border-box; }
@@ -108,16 +137,40 @@ export default function Inicio() {
         .btn-social.tk { background: #000000; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); border: 2px solid #222; }
         .btn-social.tk:hover { box-shadow: -4px 4px 0 #00f2fe, 4px -4px 0 #fe0979; border-color: transparent; }
 
-        /* AJUSTES ESPECÍFICOS PARA CELULARES QUE ARREGLAN EL FORMULARIO */
+        .zoom-img { transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: zoom-in; }
+        .zoom-img:hover { transform: scale(1.03); }
+
+        .brand-modal::-webkit-scrollbar { width: 10px; }
+        .brand-modal::-webkit-scrollbar-track { background: #f8fafc; }
+        .brand-modal::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .brand-modal::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .img-difuminada-wrapper { position: relative; width: 100%; height: 100%; border-radius: 30px; overflow: hidden; display: inline-block; }
+        .img-difuminada-wrapper::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 60px 30px #ffffff; border-radius: 30px; pointer-events: none; }
+
+        .checkbox-custom { accent-color: #E30613; width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
+
+        /* 🔥 BOTÓN HAMBURGUESA OCULTO EN PC 🔥 */
+        .btn-menu-movil { display: none; background: none; border: none; font-size: 2rem; color: #003366; cursor: pointer; }
+
         @media (max-width: 768px) {
-          .nav-container { flex-direction: column; gap: 15px; padding: 20px !important; text-align: center; }
-          .form-grid { grid-template-columns: 1fr !important; gap: 0px !important; } /* 🔥 Hace que queden uno debajo del otro */
+          /* 🔥 AJUSTES NAVBAR PARA MÓVIL 🔥 */
+          .nav-container { padding: 15px 20px !important; }
+          .nav-links { display: none !important; } /* Escondemos los links normales en celular */
+          .btn-menu-movil { display: block !important; } /* Mostramos la hamburguesa */
+
+          .form-grid { grid-template-columns: 1fr !important; gap: 0px !important; } 
           .hero-header { padding: 80px 20px !important; }
           .section-padding { padding: 40px 20px !important; }
           .title-responsive { font-size: 2.2rem !important; text-align: center; }
           .radicar-container { grid-template-columns: 1fr !important; padding: 30px 20px !important; text-align: center; }
           .form-padding { padding: 25px 15px !important; }
           .stat-mobile-box { justify-content: center !important; }
+          .brand-hero-grid { grid-template-columns: 1fr !important; }
+          .brand-hero-text { padding: 40px 20px !important; text-align: center; align-items: center !important; }
+          .brand-hero-img { height: 400px !important; padding: 20px !important; }
+          .brand-media-section { padding: 30px 20px !important; }
+          .bio-tag { margin: 0 auto 20px auto !important; align-self: center !important; }
         }
       `}</style>
 
@@ -127,12 +180,53 @@ export default function Inicio() {
           <div style={{ backgroundColor: '#E30613', color: '#fff', padding: '5px 12px', borderRadius: '5px', fontWeight: '900', fontSize: '1.5rem' }}>CR</div>
           <span style={{ fontWeight: '800', fontSize: '1.1rem', color: '#003366' }}>CONCEJAL #5 Mosquera</span>
         </div>
-        <Link to="/login" style={{ textDecoration: 'none', color: '#003366', fontWeight: 'bold', fontSize: '0.9rem', border: '2px solid #003366', padding: '8px 18px', borderRadius: '25px', transition: '0.3s' }}>
-          🔐 INGRESO EQUIPO
-        </Link>
+        
+        {/* 🔥 BOTÓN HAMBURGUESA SOLO VISIBLE EN MÓVIL 🔥 */}
+        <button className="btn-menu-movil" onClick={() => setMenuMovilAbierto(true)}>☰</button>
+
+        {/* LINKS DE ESCRITORIO (SE OCULTAN EN MÓVIL VÍA CSS) */}
+        <div className="nav-links" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          {config.bio.titulo && (
+            <button onClick={() => setMostrarModalBio(true)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s', cursor: 'pointer', padding: 0 }}>
+              Conóceme
+            </button>
+          )}
+          <a href="#gestion" style={{ textDecoration: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' }}>Gestión</a>
+          <a href="#redes" style={{ textDecoration: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' }}>Redes Sociales</a>
+          <Link to="/login" style={{ textDecoration: 'none', color: '#003366', fontWeight: 'bold', fontSize: '0.9rem', border: '2px solid #003366', padding: '8px 18px', borderRadius: '25px', transition: '0.3s', marginLeft: '10px' }}>
+            🔐 INGRESO
+          </Link>
+        </div>
       </nav>
 
-      {/* HERO SECTION BLINDADA */}
+      {/* =========================================================================
+          🚀 MENÚ DESPLEGABLE MÓVIL (FULL SCREEN GLASSMORPHISM) 🚀
+          ========================================================================= */}
+      {menuMovilAbierto && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)', animation: 'fadeIn 0.3s ease-in-out' }}>
+          
+          <button onClick={() => setMenuMovilAbierto(false)} style={{ position: 'absolute', top: '25px', right: '25px', border: 'none', background: '#f1f5f9', width: '50px', height: '50px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 'bold', color: '#003366' }}>✕</button>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', textAlign: 'center', width: '100%' }}>
+            {config.bio.titulo && (
+              <button onClick={() => { setMostrarModalBio(true); setMenuMovilAbierto(false); }} style={{ background: 'transparent', border: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem', cursor: 'pointer' }}>
+                Conóceme
+              </button>
+            )}
+            <a href="#gestion" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem' }}>Gestión</a>
+            <a href="#redes" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem' }}>Redes Sociales</a>
+            <a href="#radicar" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#E30613', fontWeight: '900', fontSize: '2rem' }}>Radicar Solicitud</a>
+            
+            <div style={{ width: '50px', height: '4px', background: '#cbd5e1', margin: '10px auto' }}></div>
+            
+            <Link to="/login" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: 'white', background: '#003366', fontWeight: 'bold', fontSize: '1.2rem', padding: '15px 40px', borderRadius: '30px', margin: '0 auto', display: 'inline-block' }}>
+              🔐 INGRESO AL SISTEMA
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* HERO SECTION HOME */}
       <header className="hero-header" style={{ background: 'linear-gradient(135deg, #003366 0%, #001a33 100%)', padding: '120px 5%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none' }}>5</div>
         <div style={{ position: 'relative', zIndex: 2 }}>
@@ -143,8 +237,6 @@ export default function Inicio() {
       </header>
 
       <div className="section-padding" style={{ maxWidth: '1200px', margin: '0 auto', padding: '80px 5%' }}>
-        
-        {/* SECCIÓN NOTICIAS Y LOGROS */}
         <section id="gestion" style={{ marginBottom: '100px' }}>
           <div style={{ textAlign: 'center', marginBottom: '60px' }}>
             <h2 className="title-responsive" style={{ fontSize: '2.8rem', color: '#003366', fontWeight: '800', lineHeight: '1.2' }}>📢 {config.textos.tituloNoticias}</h2>
@@ -169,9 +261,9 @@ export default function Inicio() {
           </div>
         </section>
 
-        {/* TARJETA: REDES SOCIALES */}
+        {/* 🔥 AÑADIDO ID="redes" PARA EL SCROLL DEL MENÚ MÓVIL 🔥 */}
         {(config.redes.facebook || config.redes.instagram || config.redes.tiktok) && (
-          <section style={{ marginBottom: '100px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '40px', padding: '60px 5%', color: 'white', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.15)', position: 'relative', overflow: 'hidden' }}>
+          <section id="redes" style={{ marginBottom: '100px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '40px', padding: '60px 5%', color: 'white', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.15)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-100px', left: '-100px', width: '300px', height: '300px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '50%' }}></div>
             <div style={{ position: 'absolute', bottom: '-100px', right: '-100px', width: '300px', height: '300px', background: 'rgba(227, 6, 19, 0.1)', borderRadius: '50%' }}></div>
             
@@ -188,7 +280,6 @@ export default function Inicio() {
           </section>
         )}
 
-        {/* VENTANILLA CIUDADANA RESPONSIVE */}
         <section id="radicar" className="radicar-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '40px', alignItems: 'center', backgroundColor: '#f8fafc', padding: '50px 5%', borderRadius: '40px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
           <div>
             <h2 className="title-responsive" style={{ fontSize: '2.8rem', color: '#003366', fontWeight: '900', lineHeight: 1.1, textTransform: 'uppercase' }}>
@@ -209,7 +300,6 @@ export default function Inicio() {
               <input type="text" placeholder="Ej. Carlos Mendoza" value={nombre} onChange={e=>setNombre(e.target.value)} required className="input-hover" style={inputStyle} />
             </div>
             
-            {/* GRID QUE SE ROMPE EN MÓVILES PERFECTAMENTE */}
             <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                 <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>WhatsApp</label><input type="tel" placeholder="300 000 0000" value={telefono} onChange={e=>setTelefono(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0}} /></div>
                 <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Correo</label><input type="email" placeholder="ejemplo@correo.com" value={correo} onChange={e=>setCorreo(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0}} /></div>
@@ -220,15 +310,104 @@ export default function Inicio() {
                 <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Categoría</label><select value={subcategoria} onChange={e=>setSubcategoria(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0, cursor: 'pointer', appearance: 'auto'}}>{config.listaSubcategorias.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
             </div>
             
-            <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Detalles del caso</label><textarea placeholder="Describe tu caso detalladamente..." value={descripcion} onChange={e=>setDescripcion(e.target.value)} required className="input-hover" style={{...inputStyle, height: '120px', resize: 'none'}} /></div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Detalles del caso</label>
+              <textarea placeholder="Describe tu caso detalladamente..." value={descripcion} onChange={e=>setDescripcion(e.target.value)} required className="input-hover" style={{...inputStyle, height: '120px', resize: 'none'}} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '25px', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={habeasData} onChange={e => setHabeasData(e.target.checked)} required className="checkbox-custom" />
+                <span style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.4' }}>
+                  Acepto la <button type="button" onClick={() => setMostrarModalHabeas(true)} style={{ background: 'transparent', border: 'none', color: '#E30613', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontWeight: 'bold', fontSize: '0.85rem' }}>Política de Tratamiento de Datos Personales</button>. *
+                </span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={publicidad} onChange={e => setPublicidad(e.target.checked)} className="checkbox-custom" />
+                <span style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.4' }}>
+                  Acepto recibir información sobre gestión, eventos y noticias del Concejal #5. (Opcional)
+                </span>
+              </label>
+            </div>
             
-            <button type="submit" disabled={cargando} style={{ width: '100%', padding: '18px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: '0.3s', boxShadow: '0 4px 10px rgba(0, 51, 102, 0.2)', marginTop: '10px' }}>{cargando ? 'PROCESANDO RADICADO...' : 'ENVIAR RADICADO AL #5'}</button>
+            <button type="submit" disabled={cargando} style={{ width: '100%', padding: '18px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: '0.3s', boxShadow: '0 4px 10px rgba(0, 51, 102, 0.2)' }}>{cargando ? 'PROCESANDO RADICADO...' : 'ENVIAR RADICADO AL #5'}</button>
           </form>
         </section>
-
       </div>
 
-      {/* MODAL DE RESEÑA ELITE */}
+      {mostrarModalHabeas && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.8)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
+          <div style={{ backgroundColor: '#ffffff', width: '100%', maxWidth: '600px', borderRadius: '24px', maxHeight: '80vh', overflowY: 'auto', position: 'relative', padding: '40px', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
+            <button onClick={() => setMostrarModalHabeas(false)} style={{ position: 'absolute', top: '20px', right: '20px', border: 'none', background: '#f1f5f9', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold', color: '#64748b' }}>✕</button>
+            <h2 style={{ fontSize: '1.8rem', color: '#003366', fontWeight: '900', margin: '0 0 20px 0' }}>Tratamiento de Datos</h2>
+            <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.8', textAlign: 'justify' }}>
+              <p>En cumplimiento de la Ley 1581 de 2012 (Ley de Protección de Datos Personales) y sus decretos reglamentarios, le informamos que los datos personales suministrados a través de este portal serán tratados de manera confidencial y segura.</p>
+              <p><strong>Finalidad:</strong> Sus datos serán utilizados exclusivamente para: 1. Dar trámite, gestión y respuesta a su Petición, Queja, Reclamo, Sugerencia o Felicitación (PQRSF). 2. Mantener contacto con usted sobre el estado de su solicitud. 3. (Solo si usted lo autoriza explícitamente) Enviarle información sobre la gestión territorial del Concejal.</p>
+              <p><strong>Derechos:</strong> Como titular de los datos, usted tiene derecho a conocer, actualizar, rectificar y solicitar la supresión de sus datos personales en cualquier momento.</p>
+            </div>
+            <button onClick={() => setMostrarModalHabeas(false)} style={{ width: '100%', padding: '15px', backgroundColor: '#E30613', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', marginTop: '20px' }}>Cerrar y Volver</button>
+          </div>
+        </div>
+      )}
+
+      {mostrarModalBio && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 26, 51, 0.95)', zIndex: 2500, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0', backdropFilter: 'blur(15px)' }}>
+          <div className="brand-modal" style={{ backgroundColor: '#f8fafc', width: '100%', height: '100vh', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <button onClick={() => setMostrarModalBio(false)} style={{ position: 'fixed', top: '30px', right: '30px', border: 'none', background: '#E30613', width: '50px', height: '50px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', color: '#fff', transition: '0.3s', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 10px 25px rgba(227,6,19,0.4)' }}>✕</button>
+            <div className="brand-hero-grid" style={{ display: 'grid', gridTemplateColumns: config.bio.foto1 ? '1fr 1fr' : '1fr', minHeight: '70vh', position: 'relative', background: '#ffffff', borderBottom: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '400px', height: '400px', background: 'rgba(0, 51, 102, 0.03)', borderRadius: '50%', zIndex: 1 }}></div>
+              <div className="brand-hero-text" style={{ padding: '100px 10%', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 2, alignItems: 'flex-start' }}>
+                <div className="bio-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '25px', background: 'rgba(227, 6, 19, 0.1)', padding: '10px 25px', borderRadius: '30px' }}>
+                  <div style={{ width: '8px', height: '8px', background: '#E30613', borderRadius: '50%' }}></div>
+                  <span style={{ color: '#E30613', letterSpacing: '2px', fontWeight: '900', fontSize: '0.85rem', textTransform: 'uppercase' }}>{config.bio.label || 'PERFIL TERRITORIAL'}</span>
+                </div>
+                <h2 style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#003366', fontWeight: '900', lineHeight: '1.1', margin: '0 0 30px 0' }}>{config.bio.titulo}</h2>
+                <p style={{ color: '#475569', fontSize: '1.2rem', lineHeight: '1.9', maxWidth: '650px', margin: 0, whiteSpace: 'pre-wrap', textAlign: 'justify' }}>{config.bio.descripcion}</p>
+              </div>
+              {config.bio.foto1 && (
+                <div className="brand-hero-img" style={{ position: 'relative', height: '100%', minHeight: '500px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px' }}>
+                  <div className="img-difuminada-wrapper zoom-img" onClick={() => setFotoBioExpandida(config.bio.foto1)}>
+                    <img src={config.bio.foto1} alt="Concejal" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                </div>
+              )}
+            </div>
+            {(config.bio.videoUrl || config.bio.foto2) && (
+              <div className="brand-media-section" style={{ padding: '80px 10%', display: 'flex', flexDirection: 'column', gap: '50px', position: 'relative', zIndex: 2 }}>
+                {config.bio.videoUrl && (
+                  <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '30px', padding: '40px', boxShadow: '0 20px 50px rgba(0,51,102,0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}><div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(227, 6, 19, 0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#E30613' }}>▶</div><h3 style={{ color: '#003366', margin: 0, fontSize: '1.5rem', fontWeight: '900' }}>Gestión en Video</h3></div>
+                    <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid #cbd5e1', aspectRatio: config.bio.videoUrl.includes('instagram') ? '9/16' : '16/9', width: '100%', maxHeight: '700px', margin: '0 auto', backgroundColor: '#000' }}><iframe width="100%" height="100%" src={obtenerUrlEmbebida(config.bio.videoUrl)} frameBorder="0" allowFullScreen style={{ border: 'none' }}></iframe></div>
+                  </div>
+                )}
+                {config.bio.foto2 && (
+                  <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '30px', padding: '40px', display: 'flex', flexDirection: 'column', gap: '30px', boxShadow: '0 20px 50px rgba(0,51,102,0.06)' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><div style={{ width: '8px', height: '8px', background: '#003366', borderRadius: '50%' }}></div><span style={{ color: '#003366', letterSpacing: '2px', fontWeight: '900', fontSize: '0.85rem', textTransform: 'uppercase' }}>Galería en Territorio</span></div>
+                    <div style={{ width: '100%', height: '500px', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#ffffff' }}>
+                        <div className="img-difuminada-wrapper zoom-img" onClick={() => setFotoBioExpandida(config.bio.foto2)}><img src={config.bio.foto2} alt="Territorio" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
+                    </div>
+                    {config.bio.foto2Descripcion && (<p style={{ color: '#64748b', fontSize: '1rem', lineHeight: '1.7', whiteSpace: 'pre-wrap', textAlign: 'center', margin: '10px auto 0 auto', maxWidth: '800px', fontStyle: 'italic' }}>{config.bio.foto2Descripcion}</p>)}
+                  </div>
+                )}
+              </div>
+            )}
+            <div style={{ padding: '40px', textAlign: 'center', borderTop: '1px solid #e2e8f0', marginTop: 'auto', background: '#ffffff' }}>
+                <p style={{ color: '#003366', fontWeight: '900', letterSpacing: '2px', fontSize: '0.85rem', textTransform: 'uppercase' }}>HECHOS PARA EL CAMBIO - CONCEJAL #5</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {fotoBioExpandida && (
+        <div onClick={() => setFotoBioExpandida(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 26, 51, 0.98)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backdropFilter: 'blur(10px)', cursor: 'zoom-out' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '1000px', textAlign: 'center' }}>
+            <button style={{ position: 'absolute', top: '-40px', right: '-40px', border: 'none', background: 'rgba(255,255,255,0.1)', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.3rem', fontWeight: 'bold', color: '#fff', zIndex: 10 }}>✕</button>
+            <img src={fotoBioExpandida} alt="Foto Expandida" style={{ width: '100%', borderRadius: '20px', border: '2px solid #333', maxHeight: '90vh', objectFit: 'contain', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }} />
+          </div>
+        </div>
+      )}
+
       {noticiaSeleccionada && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,34,68,0.98)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backdropFilter: 'blur(8px)' }}>
           <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '950px', borderRadius: '35px', maxHeight: '92vh', overflowY: 'auto', position: 'relative', padding: '50px 20px' }}>
@@ -243,8 +422,8 @@ export default function Inicio() {
             )}
             <p style={{ fontSize: '1.1rem', lineHeight: '1.8', color: '#444', marginBottom: '50px', whiteSpace: 'pre-wrap', padding: '0 20px' }}>{noticiaSeleccionada.descripcion}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px', padding: '0 20px' }}>
-              <div style={{ textAlign: 'center' }}><span style={{ fontWeight: 'bold', color: '#E30613', display: 'block', marginBottom: '15px' }}>🔴 REGISTRO: EL ANTES</span><img src={noticiaSeleccionada.imagen_1_antes} style={{ width: '100%', borderRadius: '20px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }} /></div>
-              <div style={{ textAlign: 'center' }}><span style={{ fontWeight: 'bold', color: '#28a745', display: 'block', marginBottom: '15px' }}>🟢 GESTIÓN: EL DESPUÉS</span><img src={noticiaSeleccionada.imagen_1_despues} style={{ width: '100%', borderRadius: '20px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }} /></div>
+              <div style={{ textAlign: 'center' }}><span style={{ fontWeight: 'bold', color: '#E30613', display: 'block', marginBottom: '15px' }}>🔴 REGISTRO: EL ANTES</span><img src={noticiaSeleccionada.imagen_1_antes} onClick={() => setFotoBioExpandida(noticiaSeleccionada.imagen_1_antes)} className="zoom-img" style={{ width: '100%', borderRadius: '20px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', border: '4px solid white' }} /></div>
+              <div style={{ textAlign: 'center' }}><span style={{ fontWeight: 'bold', color: '#28a745', display: 'block', marginBottom: '15px' }}>🟢 GESTIÓN: EL DESPUÉS</span><img src={noticiaSeleccionada.imagen_1_despues} onClick={() => setFotoBioExpandida(noticiaSeleccionada.imagen_1_despues)} className="zoom-img" style={{ width: '100%', borderRadius: '20px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', border: '4px solid white' }} /></div>
             </div>
             <footer style={{ marginTop: '60px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '30px', color: '#003366', fontWeight: 'bold' }}>CAMBIO RADICAL #5 - HECHOS PARA EL CAMBIO</footer>
           </div>
