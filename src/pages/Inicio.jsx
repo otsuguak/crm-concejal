@@ -33,8 +33,6 @@ export default function Inicio() {
   const [toastMsg, setToastMsg] = useState('');
   const [mostrarModalBio, setMostrarModalBio] = useState(false);
   const [fotoBioExpandida, setFotoBioExpandida] = useState(null);
-
-  // 🔥 NUEVO ESTADO PARA EL MENÚ HAMBURGUESA MÓVIL 🔥
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
 
   useEffect(() => {
@@ -148,17 +146,23 @@ export default function Inicio() {
         .img-difuminada-wrapper { position: relative; width: 100%; height: 100%; border-radius: 30px; overflow: hidden; display: inline-block; }
         .img-difuminada-wrapper::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 60px 30px #ffffff; border-radius: 30px; pointer-events: none; }
 
+        /* 🔥 BLOQUEO ANTI DARK-MODE (LETRAS SIEMPRE OSCURAS Y FONDO BLANCO) 🔥 */
+        input, select, textarea {
+          color: #0f172a !important;
+          background-color: #ffffff !important;
+          color-scheme: light !important; 
+        }
+        input::placeholder, textarea::placeholder {
+          color: #94a3b8 !important;
+          opacity: 1 !important;
+        }
         .checkbox-custom { accent-color: #E30613; width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
-
-        /* 🔥 BOTÓN HAMBURGUESA OCULTO EN PC 🔥 */
         .btn-menu-movil { display: none; background: none; border: none; font-size: 2rem; color: #003366; cursor: pointer; }
 
         @media (max-width: 768px) {
-          /* 🔥 AJUSTES NAVBAR PARA MÓVIL 🔥 */
           .nav-container { padding: 15px 20px !important; }
-          .nav-links { display: none !important; } /* Escondemos los links normales en celular */
-          .btn-menu-movil { display: block !important; } /* Mostramos la hamburguesa */
-
+          .nav-links { display: none !important; } 
+          .btn-menu-movil { display: block !important; } 
           .form-grid { grid-template-columns: 1fr !important; gap: 0px !important; } 
           .hero-header { padding: 80px 20px !important; }
           .section-padding { padding: 40px 20px !important; }
@@ -181,10 +185,8 @@ export default function Inicio() {
           <span style={{ fontWeight: '800', fontSize: '1.1rem', color: '#003366' }}>CONCEJAL #5 Mosquera</span>
         </div>
         
-        {/* 🔥 BOTÓN HAMBURGUESA SOLO VISIBLE EN MÓVIL 🔥 */}
         <button className="btn-menu-movil" onClick={() => setMenuMovilAbierto(true)}>☰</button>
 
-        {/* LINKS DE ESCRITORIO (SE OCULTAN EN MÓVIL VÍA CSS) */}
         <div className="nav-links" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           {config.bio.titulo && (
             <button onClick={() => setMostrarModalBio(true)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s', cursor: 'pointer', padding: 0 }}>
@@ -199,14 +201,10 @@ export default function Inicio() {
         </div>
       </nav>
 
-      {/* =========================================================================
-          🚀 MENÚ DESPLEGABLE MÓVIL (FULL SCREEN GLASSMORPHISM) 🚀
-          ========================================================================= */}
+      {/* MENÚ MÓVIL */}
       {menuMovilAbierto && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)', animation: 'fadeIn 0.3s ease-in-out' }}>
-          
           <button onClick={() => setMenuMovilAbierto(false)} style={{ position: 'absolute', top: '25px', right: '25px', border: 'none', background: '#f1f5f9', width: '50px', height: '50px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 'bold', color: '#003366' }}>✕</button>
-          
           <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', textAlign: 'center', width: '100%' }}>
             {config.bio.titulo && (
               <button onClick={() => { setMostrarModalBio(true); setMenuMovilAbierto(false); }} style={{ background: 'transparent', border: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem', cursor: 'pointer' }}>
@@ -216,9 +214,7 @@ export default function Inicio() {
             <a href="#gestion" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem' }}>Gestión</a>
             <a href="#redes" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem' }}>Redes Sociales</a>
             <a href="#radicar" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#E30613', fontWeight: '900', fontSize: '2rem' }}>Radicar Solicitud</a>
-            
             <div style={{ width: '50px', height: '4px', background: '#cbd5e1', margin: '10px auto' }}></div>
-            
             <Link to="/login" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: 'white', background: '#003366', fontWeight: 'bold', fontSize: '1.2rem', padding: '15px 40px', borderRadius: '30px', margin: '0 auto', display: 'inline-block' }}>
               🔐 INGRESO AL SISTEMA
             </Link>
@@ -226,7 +222,7 @@ export default function Inicio() {
         </div>
       )}
 
-      {/* HERO SECTION HOME */}
+      {/* HERO SECTION */}
       <header className="hero-header" style={{ background: 'linear-gradient(135deg, #003366 0%, #001a33 100%)', padding: '120px 5%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none' }}>5</div>
         <div style={{ position: 'relative', zIndex: 2 }}>
@@ -261,7 +257,6 @@ export default function Inicio() {
           </div>
         </section>
 
-        {/* 🔥 AÑADIDO ID="redes" PARA EL SCROLL DEL MENÚ MÓVIL 🔥 */}
         {(config.redes.facebook || config.redes.instagram || config.redes.tiktok) && (
           <section id="redes" style={{ marginBottom: '100px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '40px', padding: '60px 5%', color: 'white', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.15)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-100px', left: '-100px', width: '300px', height: '300px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '50%' }}></div>
@@ -318,14 +313,14 @@ export default function Inicio() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '25px', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
                 <input type="checkbox" checked={habeasData} onChange={e => setHabeasData(e.target.checked)} required className="checkbox-custom" />
-                <span style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.4' }}>
-                  Acepto la <button type="button" onClick={() => setMostrarModalHabeas(true)} style={{ background: 'transparent', border: 'none', color: '#E30613', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontWeight: 'bold', fontSize: '0.85rem' }}>Política de Tratamiento de Datos Personales</button>. *
+                <span style={{ fontSize: '0.85rem', color: '#0f172a', lineHeight: '1.4' }}>
+                  Acepto la <button type="button" onClick={() => setMostrarModalHabeas(true)} style={{ background: 'transparent', border: 'none', color: '#E30613', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontWeight: 'bold', fontSize: '0.85rem' }}>Política de Tratamiento de Datos</button>. *
                 </span>
               </label>
 
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
                 <input type="checkbox" checked={publicidad} onChange={e => setPublicidad(e.target.checked)} className="checkbox-custom" />
-                <span style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.4' }}>
+                <span style={{ fontSize: '0.85rem', color: '#0f172a', lineHeight: '1.4' }}>
                   Acepto recibir información sobre gestión, eventos y noticias del Concejal #5. (Opcional)
                 </span>
               </label>
@@ -336,6 +331,7 @@ export default function Inicio() {
         </section>
       </div>
 
+      {/* MODAL HABEAS DATA */}
       {mostrarModalHabeas && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.8)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
           <div style={{ backgroundColor: '#ffffff', width: '100%', maxWidth: '600px', borderRadius: '24px', maxHeight: '80vh', overflowY: 'auto', position: 'relative', padding: '40px', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
@@ -351,6 +347,8 @@ export default function Inicio() {
         </div>
       )}
 
+
+      {/* MODAL BIOGRAFÍA PREMIUM */}
       {mostrarModalBio && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 26, 51, 0.95)', zIndex: 2500, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0', backdropFilter: 'blur(15px)' }}>
           <div className="brand-modal" style={{ backgroundColor: '#f8fafc', width: '100%', height: '100vh', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}>

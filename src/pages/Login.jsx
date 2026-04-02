@@ -81,8 +81,18 @@ export default function Login() {
   return (
     <div className="login-container" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', fontFamily: "'Inter', sans-serif" }}>
       
-      {/* ESTILOS PARA QUE EL LOGIN SE VEA BIEN EN CELULARES */}
       <style>{`
+        /* 🔥 BLOQUEO ANTI DARK-MODE (LETRAS SIEMPRE OSCURAS Y FONDO BLANCO) 🔥 */
+        input {
+          color: #0f172a !important;
+          background-color: #ffffff !important;
+          color-scheme: light !important; 
+        }
+        input::placeholder {
+          color: #94a3b8 !important;
+          opacity: 1 !important;
+        }
+
         @media (max-width: 768px) {
           .login-container { flex-direction: column !important; }
           .login-left { padding: 40px 20px !important; min-height: 40vh; }
@@ -97,7 +107,7 @@ export default function Login() {
         </div>
       )}
 
-      {/* MITAD IZQUIERDA (AHORA CENTRADA Y CON COLOR BLINDADO) */}
+      {/* MITAD IZQUIERDA */}
       <div className="login-left" style={{ flex: 1, background: '#003366', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '50px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ background: '#E30613', color: '#ffffff', padding: '15px 30px', borderRadius: '15px', fontWeight: '900', fontSize: '3rem', marginBottom: '20px', boxShadow: '0 10px 25px rgba(227, 6, 19, 0.4)' }}>5</div>
@@ -108,7 +118,7 @@ export default function Login() {
         <div style={{ position: 'absolute', bottom: '-15%', left: '-10%', width: '500px', height: '500px', background: 'rgba(227, 6, 19, 0.1)', borderRadius: '50%' }}></div>
       </div>
 
-      {/* MITAD DERECHA (Formulario de Login) */}
+      {/* MITAD DERECHA */}
       <div className="login-right" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
         <div style={{ width: '100%', maxWidth: '400px', background: '#ffffff', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
           <h2 style={{ color: '#0f172a', margin: '0 0 5px 0', fontSize: '1.8rem' }}>Bienvenido 👋</h2>
@@ -119,11 +129,11 @@ export default function Login() {
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '8px', display: 'block' }}>Correo Electrónico</label>
-              <input type="email" placeholder="admin@mosquera.gov.co" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', fontSize: '1rem', backgroundColor: '#f8fafc' }} />
+              <input type="email" placeholder="admin@mosquera.gov.co" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', fontSize: '1rem' }} />
             </div>
             <div>
               <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '8px', display: 'block' }}>Contraseña</label>
-              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', fontSize: '1rem', backgroundColor: '#f8fafc' }} />
+              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', fontSize: '1rem' }} />
             </div>
             <button type="submit" disabled={cargando} style={{ background: '#003366', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: '0.2s', marginTop: '10px' }}>
               {cargando ? '⌛ Iniciando sesión...' : 'Ingresar al CRM 🚀'}
@@ -147,7 +157,7 @@ export default function Login() {
               <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#475569' }}>Nombre Completo</label><input type="text" value={regNombre} onChange={(e) => setRegNombre(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box', marginTop: '5px' }} /></div>
               <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#475569' }}>Teléfono Celular</label><input type="tel" value={regTelefono} onChange={(e) => setRegTelefono(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box', marginTop: '5px' }} /></div>
               <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#475569' }}>Correo Electrónico Institucional</label><input type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box', marginTop: '5px' }} /></div>
-              <div style={{ background: '#fef2f2', padding: '15px', borderRadius: '10px', border: '1px solid #fecaca' }}><label style={{ fontSize: '0.8rem', fontWeight: '900', color: '#991b1b' }}>🔐 Código Secreto de Acceso</label><input type="text" value={regCodigo} onChange={(e) => setRegCodigo(e.target.value)} placeholder="Solicítalo al Admin" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #fca5a5', boxSizing: 'border-box', marginTop: '5px', background: 'white', fontWeight: 'bold', color: '#991b1b' }} /></div>
+              <div style={{ background: '#fef2f2', padding: '15px', borderRadius: '10px', border: '1px solid #fecaca' }}><label style={{ fontSize: '0.8rem', fontWeight: '900', color: '#991b1b' }}>🔐 Código Secreto de Acceso</label><input type="text" value={regCodigo} onChange={(e) => setRegCodigo(e.target.value)} placeholder="Solicítalo al Admin" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #fca5a5', boxSizing: 'border-box', marginTop: '5px', fontWeight: 'bold', color: '#991b1b' }} /></div>
               <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#475569' }}>Crear Contraseña</label><input type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength="6" placeholder="Mínimo 6 caracteres" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box', marginTop: '5px' }} /></div>
               <button type="submit" disabled={regCargando} style={{ background: '#E30613', color: 'white', border: 'none', padding: '15px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>{regCargando ? 'Validando...' : 'Verificar y Crear Cuenta'}</button>
             </form>
