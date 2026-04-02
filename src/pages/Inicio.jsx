@@ -22,7 +22,6 @@ export default function Inicio() {
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [correo, setCorreo] = useState('');
-  const [tipoPQRSF, setTipoPQRSF] = useState('');
   const [subcategoria, setSubcategoria] = useState(''); 
   const [descripcion, setDescripcion] = useState('');
   
@@ -31,12 +30,15 @@ export default function Inicio() {
   const [mostrarModalHabeas, setMostrarModalHabeas] = useState(false);
 
   const [toastMsg, setToastMsg] = useState('');
-  // 🔥 NUEVO ESTADO PARA EL MENSAJE DE ERROR PREMIUM 🔥
   const [errorMsg, setErrorMsg] = useState(''); 
   
   const [mostrarModalBio, setMostrarModalBio] = useState(false);
   const [fotoBioExpandida, setFotoBioExpandida] = useState(null);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
+
+  // 🔥 NUEVOS ESTADOS PARA CONECTAR LA TABLA REAL DE SOLICITUDES 🔥
+  const [tiposSolicitud, setTiposSolicitud] = useState([]);
+  const [tipoPQRSF, setTipoPQRSF] = useState('');
 
   useEffect(() => {
     async function cargarPortal() {
@@ -60,8 +62,14 @@ export default function Inicio() {
           }
         });
         
-        if (dataConfig.lista_pqrsf?.length > 0) setTipoPQRSF(dataConfig.lista_pqrsf[0]);
         if (dataConfig.lista_subcategorias?.length > 0) setSubcategoria(dataConfig.lista_subcategorias[0]);
+      }
+
+      // 🔥 CONSULTA A LA TABLA OFICIAL DE TIPOS DE SOLICITUD 🔥
+      const { data: tipos } = await supabase.from('tipos_solicitud').select('*').order('id', { ascending: true });
+      if (tipos) {
+        setTiposSolicitud(tipos);
+        if (tipos.length > 0) setTipoPQRSF(tipos[0].id);
       }
 
       const { data: n } = await supabase.from('noticias').select('*').eq('visible', true).order('id', { ascending: false });
@@ -88,15 +96,19 @@ export default function Inicio() {
   const enviarRadicado = async (e) => {
     e.preventDefault(); 
     setCargando(true);
-    setErrorMsg(''); // Limpiamos errores previos
+    setErrorMsg('');
 
-    const fechaLim = new Date(); fechaLim.setDate(fechaLim.getDate() + 5); 
+    // 🔥 CÁLCULO INTELIGENTE DEL SLA (TIEMPO DE RESPUESTA) 🔥
+    const tipoSeleccionado = tiposSolicitud.find(t => t.id === parseInt(tipoPQRSF));
+    const diasSLA = tipoSeleccionado?.dias_respuesta || 5; 
+    const fechaLim = new Date(); 
+    fechaLim.setDate(fechaLim.getDate() + diasSLA); 
 
     const { error } = await supabase.from('casos').insert([{
       ciudadano_nombre: nombre, 
       ciudadano_telefono: telefono, 
       ciudadano_correo: correo, 
-      asunto_principal: tipoPQRSF, 
+      tipo_solicitud_id: parseInt(tipoPQRSF), // 🔥 COLUMNA CORREGIDA A LA TABLA REAL 🔥
       subcategoria: subcategoria, 
       descripcion_caso: descripcion, 
       fecha_limite: fechaLim.toISOString(), 
@@ -109,12 +121,11 @@ export default function Inicio() {
       setToastMsg("✅ ¡Radicado con éxito! El equipo del #5 está en marcha.");
       setNombre(''); setTelefono(''); setCorreo(''); setDescripcion(''); 
       setHabeasData(false); setPublicidad(false); 
-      if (config.listaPQRSF.length > 0) setTipoPQRSF(config.listaPQRSF[0]);
+      if (tiposSolicitud.length > 0) setTipoPQRSF(tiposSolicitud[0].id);
       if (config.listaSubcategorias.length > 0) setSubcategoria(config.listaSubcategorias[0]);
       setTimeout(() => { setToastMsg(''); }, 4000);
     } else { 
-      // 🔥 REEMPLAZAMOS EL ALERT FEO POR NUESTRO ESTADO PREMIUM 🔥
-      setErrorMsg("Error del servidor: " + error.message + ". Por favor, contacta a soporte técnico.");
+      setErrorMsg("Error: " + error.message);
       setTimeout(() => { setErrorMsg(''); }, 6000);
     }
     setCargando(false);
@@ -123,7 +134,6 @@ export default function Inicio() {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#fff', color: '#1a1a1a', overflowX: 'hidden' }}>
       
-      {/* 🔥 TOASTS FLOTANTES PREMIUM (ÉXITO Y ERROR) 🔥 */}
       {toastMsg && ( <div style={{ position: 'fixed', top: '20px', right: '20px', background: '#10b981', color: 'white', padding: '15px 25px', borderRadius: '12px', fontWeight: 'bold', zIndex: 9999, boxShadow: '0 10px 25px rgba(16, 185, 129, 0.4)', animation: 'fadeIn 0.3s' }}>{toastMsg}</div> )}
       {errorMsg && ( <div style={{ position: 'fixed', top: '20px', right: '20px', background: '#E30613', color: 'white', padding: '15px 25px', borderRadius: '12px', fontWeight: 'bold', zIndex: 9999, boxShadow: '0 10px 25px rgba(227, 6, 19, 0.4)', animation: 'fadeIn 0.3s', maxWidth: '350px' }}>❌ {errorMsg}</div> )}
 
@@ -184,7 +194,6 @@ export default function Inicio() {
         }
       `}</style>
 
-      {/* NAVBAR */}
       <nav className="nav-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 5%', backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 1000 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ backgroundColor: '#E30613', color: '#fff', padding: '5px 12px', borderRadius: '5px', fontWeight: '900', fontSize: '1.5rem' }}>CR</div>
@@ -207,7 +216,6 @@ export default function Inicio() {
         </div>
       </nav>
 
-      {/* MENÚ MÓVIL */}
       {menuMovilAbierto && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)', animation: 'fadeIn 0.3s ease-in-out' }}>
           <button onClick={() => setMenuMovilAbierto(false)} style={{ position: 'absolute', top: '25px', right: '25px', border: 'none', background: '#f1f5f9', width: '50px', height: '50px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 'bold', color: '#003366' }}>✕</button>
@@ -228,7 +236,6 @@ export default function Inicio() {
         </div>
       )}
 
-      {/* HERO SECTION HOME */}
       <header className="hero-header" style={{ background: 'linear-gradient(135deg, #003366 0%, #001a33 100%)', padding: '120px 5%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none' }}>5</div>
         <div style={{ position: 'relative', zIndex: 2 }}>
@@ -307,7 +314,9 @@ export default function Inicio() {
             </div>
             
             <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Solicitud</label><select value={tipoPQRSF} onChange={e=>setTipoPQRSF(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0, cursor: 'pointer', appearance: 'auto'}}>{config.listaPQRSF.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+                <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Solicitud</label><select value={tipoPQRSF} onChange={e=>setTipoPQRSF(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0, cursor: 'pointer', appearance: 'auto'}}>
+                  {tiposSolicitud.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                </select></div>
                 <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Categoría</label><select value={subcategoria} onChange={e=>setSubcategoria(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0, cursor: 'pointer', appearance: 'auto'}}>{config.listaSubcategorias.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
             </div>
             
