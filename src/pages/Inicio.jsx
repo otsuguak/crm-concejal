@@ -36,7 +36,6 @@ export default function Inicio() {
   const [fotoBioExpandida, setFotoBioExpandida] = useState(null);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
 
-  // 🔥 NUEVOS ESTADOS PARA CONECTAR LA TABLA REAL DE SOLICITUDES 🔥
   const [tiposSolicitud, setTiposSolicitud] = useState([]);
   const [tipoPQRSF, setTipoPQRSF] = useState('');
 
@@ -65,7 +64,6 @@ export default function Inicio() {
         if (dataConfig.lista_subcategorias?.length > 0) setSubcategoria(dataConfig.lista_subcategorias[0]);
       }
 
-      // 🔥 CONSULTA A LA TABLA OFICIAL DE TIPOS DE SOLICITUD 🔥
       const { data: tipos } = await supabase.from('tipos_solicitud').select('*').order('id', { ascending: true });
       if (tipos) {
         setTiposSolicitud(tipos);
@@ -98,7 +96,6 @@ export default function Inicio() {
     setCargando(true);
     setErrorMsg('');
 
-    // 🔥 CÁLCULO INTELIGENTE DEL SLA (TIEMPO DE RESPUESTA) 🔥
     const tipoSeleccionado = tiposSolicitud.find(t => t.id === parseInt(tipoPQRSF));
     const diasSLA = tipoSeleccionado?.dias_respuesta || 5; 
     const fechaLim = new Date(); 
@@ -108,11 +105,11 @@ export default function Inicio() {
       ciudadano_nombre: nombre, 
       ciudadano_telefono: telefono, 
       ciudadano_correo: correo, 
-      tipo_solicitud_id: parseInt(tipoPQRSF), // 🔥 COLUMNA CORREGIDA A LA TABLA REAL 🔥
+      tipo_solicitud_id: parseInt(tipoPQRSF), 
       subcategoria: subcategoria, 
       descripcion_caso: descripcion, 
       fecha_limite: fechaLim.toISOString(), 
-      estado: 'ABIERTO',
+      estado: 'Abierto', // 🔥 EL ARREGLO MÁGICO ESTÁ AQUÍ (Antes decía 'ABIERTO') 🔥
       habeas_data: habeasData,
       recibir_publicidad: publicidad
     }]);
