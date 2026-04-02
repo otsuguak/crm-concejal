@@ -31,6 +31,9 @@ export default function Inicio() {
   const [mostrarModalHabeas, setMostrarModalHabeas] = useState(false);
 
   const [toastMsg, setToastMsg] = useState('');
+  // 🔥 NUEVO ESTADO PARA EL MENSAJE DE ERROR PREMIUM 🔥
+  const [errorMsg, setErrorMsg] = useState(''); 
+  
   const [mostrarModalBio, setMostrarModalBio] = useState(false);
   const [fotoBioExpandida, setFotoBioExpandida] = useState(null);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
@@ -83,7 +86,10 @@ export default function Inicio() {
   };
 
   const enviarRadicado = async (e) => {
-    e.preventDefault(); setCargando(true);
+    e.preventDefault(); 
+    setCargando(true);
+    setErrorMsg(''); // Limpiamos errores previos
+
     const fechaLim = new Date(); fechaLim.setDate(fechaLim.getDate() + 5); 
 
     const { error } = await supabase.from('casos').insert([{
@@ -106,19 +112,27 @@ export default function Inicio() {
       if (config.listaPQRSF.length > 0) setTipoPQRSF(config.listaPQRSF[0]);
       if (config.listaSubcategorias.length > 0) setSubcategoria(config.listaSubcategorias[0]);
       setTimeout(() => { setToastMsg(''); }, 4000);
-    } else { alert("Error: " + error.message); }
+    } else { 
+      // 🔥 REEMPLAZAMOS EL ALERT FEO POR NUESTRO ESTADO PREMIUM 🔥
+      setErrorMsg("Error del servidor: " + error.message + ". Por favor, contacta a soporte técnico.");
+      setTimeout(() => { setErrorMsg(''); }, 6000);
+    }
     setCargando(false);
   };
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#fff', color: '#1a1a1a', overflowX: 'hidden' }}>
       
-      {toastMsg && ( <div className="toast-exito" style={{ zIndex: 9999 }}>{toastMsg}</div> )}
+      {/* 🔥 TOASTS FLOTANTES PREMIUM (ÉXITO Y ERROR) 🔥 */}
+      {toastMsg && ( <div style={{ position: 'fixed', top: '20px', right: '20px', background: '#10b981', color: 'white', padding: '15px 25px', borderRadius: '12px', fontWeight: 'bold', zIndex: 9999, boxShadow: '0 10px 25px rgba(16, 185, 129, 0.4)', animation: 'fadeIn 0.3s' }}>{toastMsg}</div> )}
+      {errorMsg && ( <div style={{ position: 'fixed', top: '20px', right: '20px', background: '#E30613', color: 'white', padding: '15px 25px', borderRadius: '12px', fontWeight: 'bold', zIndex: 9999, boxShadow: '0 10px 25px rgba(227, 6, 19, 0.4)', animation: 'fadeIn 0.3s', maxWidth: '350px' }}>❌ {errorMsg}</div> )}
 
       <style>{`
         html { scroll-behavior: smooth; }
         * { box-sizing: border-box; }
         
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
         .hero-title { font-size: clamp(2.2rem, 5vw, 4.5rem) !important; color: #ffffff !important; font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .hero-subtitle { font-size: clamp(1rem, 2vw, 1.5rem) !important; color: #e2e8f0 !important; margin-bottom: 40px; line-height: 1.5; font-weight: 400; max-width: 800px; margin-left: auto; margin-right: auto; }
 
@@ -146,16 +160,8 @@ export default function Inicio() {
         .img-difuminada-wrapper { position: relative; width: 100%; height: 100%; border-radius: 30px; overflow: hidden; display: inline-block; }
         .img-difuminada-wrapper::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 60px 30px #ffffff; border-radius: 30px; pointer-events: none; }
 
-        /* 🔥 BLOQUEO ANTI DARK-MODE (LETRAS SIEMPRE OSCURAS Y FONDO BLANCO) 🔥 */
-        input, select, textarea {
-          color: #0f172a !important;
-          background-color: #ffffff !important;
-          color-scheme: light !important; 
-        }
-        input::placeholder, textarea::placeholder {
-          color: #94a3b8 !important;
-          opacity: 1 !important;
-        }
+        input, select, textarea { color: #0f172a !important; background-color: #ffffff !important; color-scheme: light !important; }
+        input::placeholder, textarea::placeholder { color: #94a3b8 !important; opacity: 1 !important; }
         .checkbox-custom { accent-color: #E30613; width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
         .btn-menu-movil { display: none; background: none; border: none; font-size: 2rem; color: #003366; cursor: pointer; }
 
@@ -222,7 +228,7 @@ export default function Inicio() {
         </div>
       )}
 
-      {/* HERO SECTION */}
+      {/* HERO SECTION HOME */}
       <header className="hero-header" style={{ background: 'linear-gradient(135deg, #003366 0%, #001a33 100%)', padding: '120px 5%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none' }}>5</div>
         <div style={{ position: 'relative', zIndex: 2 }}>
@@ -314,7 +320,7 @@ export default function Inicio() {
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
                 <input type="checkbox" checked={habeasData} onChange={e => setHabeasData(e.target.checked)} required className="checkbox-custom" />
                 <span style={{ fontSize: '0.85rem', color: '#0f172a', lineHeight: '1.4' }}>
-                  Acepto la <button type="button" onClick={() => setMostrarModalHabeas(true)} style={{ background: 'transparent', border: 'none', color: '#E30613', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontWeight: 'bold', fontSize: '0.85rem' }}>Política de Tratamiento de Datos</button>. *
+                  Acepto la <button type="button" onClick={() => setMostrarModalHabeas(true)} style={{ background: 'transparent', border: 'none', color: '#E30613', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontWeight: 'bold', fontSize: '0.85rem' }}>Política de Tratamiento de Datos Personales</button>. *
                 </span>
               </label>
 
@@ -331,7 +337,6 @@ export default function Inicio() {
         </section>
       </div>
 
-      {/* MODAL HABEAS DATA */}
       {mostrarModalHabeas && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.8)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
           <div style={{ backgroundColor: '#ffffff', width: '100%', maxWidth: '600px', borderRadius: '24px', maxHeight: '80vh', overflowY: 'auto', position: 'relative', padding: '40px', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
