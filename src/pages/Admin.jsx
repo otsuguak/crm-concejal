@@ -31,9 +31,8 @@ export default function Admin() {
   const [confListas, setConfListas] = useState({ subcat: [], nuevaSubcat: '' });
   const [nuevoTipoNombre, setNuevoTipoNombre] = useState('');
   
-  // 🔥 ESTADO DE IDENTIDAD ACTUALIZADO 🔥
   const [confTextos, setConfTextos] = useState({ 
-    navbarTexto: '', logoUrlActual: '', heroFondoActual: '', // NUEVOS
+    navbarTexto: '', logoUrlActual: '', heroFondoActual: '',
     tituloHero: '', descHero: '', tituloForm: '', descForm: '', tituloNoticias: '', descNoticias: '',
     tituloRedes: '', descRedes: '', urlFacebook: '', urlInstagram: '', urlTiktok: ''
   });
@@ -143,7 +142,6 @@ export default function Admin() {
 
   const guardarConfigSeguridad = async (e) => { e.preventDefault(); setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ requiere_codigo: confSeguridad.requiere, codigo_secreto_registro: confSeguridad.codigo }).eq('id', 1); if (error) throw error; mostrarExito("¡Seguridad del portal actualizada!"); setMostrarModalSeguridad(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
   
-  // 🔥 GUARDAR TEXTOS, LOGO Y FONDO 🔥
   const guardarConfigTextos = async (e) => { 
     e.preventDefault(); 
     setSubiendo(true); 
@@ -152,9 +150,7 @@ export default function Admin() {
       const urlFondoFinal = archivoHeroFondo ? await subirArchivo(archivoHeroFondo, 'noticias') : confTextos.heroFondoActual;
 
       const { error } = await supabase.from('configuracion').update({ 
-        navbar_texto: confTextos.navbarTexto,
-        logo_url: urlLogoFinal,
-        hero_fondo_url: urlFondoFinal,
+        navbar_texto: confTextos.navbarTexto, logo_url: urlLogoFinal, hero_fondo_url: urlFondoFinal,
         titulo_hero: confTextos.tituloHero, descripcion_hero: confTextos.descHero, 
         titulo_formulario: confTextos.tituloForm, descripcion_formulario: confTextos.descForm, 
         titulo_noticias: confTextos.tituloNoticias, descripcion_noticias_seccion: confTextos.descNoticias, 
@@ -164,8 +160,7 @@ export default function Admin() {
       
       if (error) throw error; 
       mostrarExito("¡Identidad, Textos y Redes actualizados!"); 
-      setMostrarModalTextos(false); setArchivoLogo(null); setArchivoHeroFondo(null);
-      cargarTodo(); 
+      setMostrarModalTextos(false); setArchivoLogo(null); setArchivoHeroFondo(null); cargarTodo(); 
     } catch (err) { alert("Error: " + err.message); } 
     setSubiendo(false); 
   };
@@ -177,8 +172,7 @@ export default function Admin() {
       const { error } = await supabase.from('tipos_solicitud').insert([{ nombre: nuevoTipoNombre, dias_respuesta: 5 }]);
       if (error) throw error;
       mostrarExito("¡Categoría agregada exitosamente!");
-      setNuevoTipoNombre('');
-      cargarTodo(); 
+      setNuevoTipoNombre(''); cargarTodo(); 
     } catch (err) { alert("Error al agregar: " + err.message); }
     setSubiendo(false);
   };
@@ -259,8 +253,71 @@ export default function Admin() {
     setSubiendo(false); 
   };
 
-  const asignarCaso = async (idCaso) => { if (!colaboradorAsignado) { alert("⚠️ Selecciona un asesor."); return; } setSubiendo(true); try { const { error } = await supabase.from('casos').update({ estado: 'Escalado', colaborador_id: colaboradorAsignado }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Caso escalado!"); setCasoSeleccionado(null); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
-  const solucionarCaso = async (idCaso) => { if (window.confirm("¿Confirmas que este caso ya fue gestionado?")) { setSubiendo(true); try { const { error } = await supabase.from('casos').update({ estado: 'Solucionado' }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Caso solucionado!"); setCasoSeleccionado(null); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); } };
+  // 🔥 ESCALAMIENTO CON CORREO AUTOMÁTICO 🔥
+  const asignarCaso = async (idCaso) => { 
+    if (!colaboradorAsignado) { alert("⚠️ Selecciona un asesor."); return; } 
+    setSubiendo(true); 
+    try { 
+      const { error } = await supabase.from('casos').update({ estado: 'Escalado', colaborador_id: colaboradorAsignado }).eq('id', idCaso); 
+      if (error) throw error; 
+
+      // 📧 DISPARADOR EMAILJS (ESCALAMIENTO) 📧
+      const datosEmailEscalado = {
+        service_id: 'TU_SERVICE_ID',              // REEMPLAZA ESTO
+        template_id: 'TU_TEMPLATE_ESCALADO',      // REEMPLAZA ESTO
+        user_id: 'TU_PUBLIC_KEY',                 // REEMPLAZA ESTO
+        template_params: {
+          correo_ciudadano: casoSeleccionado.ciudadano_correo,
+          nombre_ciudadano: casoSeleccionado.ciudadano_nombre,
+          numero_radicado: idCaso
+        }
+      };
+      fetch('https://api.emailjs.com/api/v1.0/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosEmailEscalado) }).catch(err => console.log(err));
+      // =======================================
+
+      mostrarExito("¡Caso escalado y correo enviado!"); 
+      setCasoSeleccionado(null); cargarTodo(); 
+    } catch (err) { alert("Error al escalar: " + err.message); } 
+    setSubiendo(false); 
+  };
+
+  // 🔥 SOLUCIONADO (CIERRE) CON CORREO DE LA ÚLTIMA NOTA 🔥
+  const solucionarCaso = async (idCaso) => { 
+    if (window.confirm("¿Confirmas que este caso ya fue gestionado?")) { 
+      setSubiendo(true); 
+      try { 
+        
+        // 1. Extraer quirurgicamente SÓLO la última nota del historial
+        let ultimaNotaExtraida = 'Tu caso ha sido gestionado con éxito por nuestro equipo.';
+        if (casoSeleccionado.respuesta_gestion) {
+          const arrayNotas = casoSeleccionado.respuesta_gestion.split('\n\n=========================\n\n');
+          ultimaNotaExtraida = arrayNotas[arrayNotas.length - 1]; // Toma el ultimo elemento del arreglo
+        }
+
+        const { error } = await supabase.from('casos').update({ estado: 'Solucionado' }).eq('id', idCaso); 
+        if (error) throw error; 
+
+        // 📧 DISPARADOR EMAILJS (CIERRE DE CASO) 📧
+        const datosEmailCierre = {
+          service_id: 'TU_SERVICE_ID',              // REEMPLAZA ESTO
+          template_id: 'TU_TEMPLATE_CIERRE',        // REEMPLAZA ESTO
+          user_id: 'TU_PUBLIC_KEY',                 // REEMPLAZA ESTO
+          template_params: {
+            correo_ciudadano: casoSeleccionado.ciudadano_correo,
+            nombre_ciudadano: casoSeleccionado.ciudadano_nombre,
+            numero_radicado: idCaso,
+            ultima_respuesta: ultimaNotaExtraida
+          }
+        };
+        fetch('https://api.emailjs.com/api/v1.0/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosEmailCierre) }).catch(err => console.log(err));
+        // =======================================
+
+        mostrarExito("¡Caso solucionado y correo enviado!"); 
+        setCasoSeleccionado(null); cargarTodo(); 
+      } catch (err) { alert("Error: " + err.message); } 
+      setSubiendo(false); 
+    } 
+  };
 
   const casosFiltrados = casos.filter(c => {
     const matchNombre = c.ciudadano_nombre.toLowerCase().includes(busqueda.toLowerCase());
@@ -292,7 +349,11 @@ export default function Admin() {
 
       <aside className="admin-sidebar" style={{overflowY: 'auto'}}>
         <div style={{padding: '40px 20px', textAlign: 'center'}}>
-           <div style={{background:'#E30613', color:'white', display:'inline-block', padding:'12px 25px', borderRadius:'15px', fontWeight:'900', fontSize:'2.2rem', boxShadow:'0 10px 20px rgba(227, 6, 19, 0.4)'}}>5</div>
+           {confTextos.logoUrlActual ? (
+             <img src={confTextos.logoUrlActual} style={{maxHeight:'60px', borderRadius:'10px', boxShadow:'0 10px 20px rgba(0,0,0,0.1)'}} />
+           ) : (
+             <div style={{background:'#E30613', color:'white', display:'inline-block', padding:'12px 25px', borderRadius:'15px', fontWeight:'900', fontSize:'2.2rem', boxShadow:'0 10px 20px rgba(227, 6, 19, 0.4)'}}>5</div>
+           )}
            <h3 style={{color:'white', marginTop:'20px', fontSize:'0.85rem', letterSpacing:'2px', opacity: 0.8, textTransform:'uppercase'}}>CRM Concejal</h3>
         </div>
         
@@ -370,7 +431,7 @@ export default function Admin() {
       </main>
 
       {/* =======================================================================
-          🔥 MODAL DE IDENTIDAD, TEXTOS Y REDES 🔥
+          MODALES DE CONFIGURACIÓN
           ======================================================================= */}
       {mostrarModalTextos && (
         <div style={overlayStyle}>

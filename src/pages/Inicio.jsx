@@ -30,6 +30,9 @@ export default function Inicio() {
   const [publicidad, setPublicidad] = useState(false);
   const [mostrarModalHabeas, setMostrarModalHabeas] = useState(false);
 
+  // 🔥 NUEVO ESTADO PARA EL MODAL DE VALIDACIÓN DE CORREO 🔥
+  const [mostrarConfirmacionCorreo, setMostrarConfirmacionCorreo] = useState(false);
+
   const [toastMsg, setToastMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState(''); 
   
@@ -47,11 +50,7 @@ export default function Inicio() {
       if (dataConfig && !errorConfig) {
         setConfig({
           listaPQRSF: dataConfig.lista_pqrsf || [], listaSubcategorias: dataConfig.lista_subcategorias || [],
-          identidad: { 
-            logo: dataConfig.logo_url || '', 
-            texto: dataConfig.navbar_texto || 'CONCEJAL #5 Mosquera', 
-            fondoHero: dataConfig.hero_fondo_url || '' 
-          },
+          identidad: { logo: dataConfig.logo_url || '', texto: dataConfig.navbar_texto || 'CONCEJAL #5 Mosquera', fondoHero: dataConfig.hero_fondo_url || '' },
           textos: {
             tituloHero: dataConfig.titulo_hero || 'EL CAMBIO SIGUE', descHero: dataConfig.descripcion_hero || 'Gestión real, resultados para la gente. Vota Cambio Radical #5',
             tituloForm: dataConfig.titulo_formulario || 'VENTANILLA CIUDADANA', descForm: dataConfig.descripcion_formulario || '¿Tienes una petición, queja o una idea para mejorar nuestro municipio? Mi equipo jurídico y técnico revisará tu caso personalmente.',
@@ -59,23 +58,13 @@ export default function Inicio() {
             tituloRedes: dataConfig.titulo_redes || '📱 ¡Conéctate con el Cambio!', descRedes: dataConfig.descripcion_redes || 'Únete a nuestra comunidad digital. Entérate en tiempo real de nuestros proyectos, debates y resultados en el municipio. ¡Tu voz también cuenta en nuestras redes!'
           },
           redes: { facebook: dataConfig.url_facebook || '', instagram: dataConfig.url_instagram || '', tiktok: dataConfig.url_tiktok || '' },
-          bio: { 
-            titulo: dataConfig.bio_titulo || '', descripcion: dataConfig.bio_descripcion || '', 
-            videoUrl: dataConfig.bio_video_url || '', foto1: dataConfig.bio_foto_1 || '', foto2: dataConfig.bio_foto_2 || '',
-            label: dataConfig.bio_label || 'PERFIL TERRITORIAL',
-            foto2Descripcion: dataConfig.bio_foto_2_descripcion || '' 
-          }
+          bio: { titulo: dataConfig.bio_titulo || '', descripcion: dataConfig.bio_descripcion || '', videoUrl: dataConfig.bio_video_url || '', foto1: dataConfig.bio_foto_1 || '', foto2: dataConfig.bio_foto_2 || '', label: dataConfig.bio_label || 'PERFIL TERRITORIAL', foto2Descripcion: dataConfig.bio_foto_2_descripcion || '' }
         });
-        
         if (dataConfig.lista_subcategorias?.length > 0) setSubcategoria(dataConfig.lista_subcategorias[0]);
       }
 
       const { data: tipos } = await supabase.from('tipos_solicitud').select('*').order('id', { ascending: true });
-      if (tipos) {
-        setTiposSolicitud(tipos);
-        if (tipos.length > 0) setTipoPQRSF(tipos[0].id);
-      }
-
+      if (tipos) { setTiposSolicitud(tipos); if (tipos.length > 0) setTipoPQRSF(tipos[0].id); }
       const { data: n } = await supabase.from('noticias').select('*').eq('visible', true).order('id', { ascending: false });
       setNoticias(n || []);
     }
@@ -84,21 +73,20 @@ export default function Inicio() {
 
   const obtenerUrlEmbebida = (url) => {
     if (!url) return null;
-    if (url.includes('instagram.com')) {
-      const match = url.match(/(?:https?:\/\/www\.)?instagram\.com\/(?:p|reel|tv)\/([^\/?#&]+)/);
-      const id = match ? match[1] : null;
-      return id ? `https://www.instagram.com/p/${id}/embed/` : url;
-    }
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^"&?\/\s]{11})/);
-      const id = match ? match[1] : null;
-      return id ? `https://www.youtube.com/embed/${id}` : url;
-    }
+    if (url.includes('instagram.com')) { const match = url.match(/(?:https?:\/\/www\.)?instagram\.com\/(?:p|reel|tv)\/([^\/?#&]+)/); return match ? `https://www.instagram.com/p/${match[1]}/embed/` : url; }
+    if (url.includes('youtube.com') || url.includes('youtu.be')) { const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^"&?\/\s]{11})/); return match ? `https://www.youtube.com/embed/${match[1]}` : url; }
     return url;
   };
 
-  const enviarRadicado = async (e) => {
-    e.preventDefault(); 
+  // 🔥 1. Función que atrapa el clic de Enviar y abre el modal 🔥
+  const preEnviarRadicado = (e) => {
+    e.preventDefault();
+    setMostrarConfirmacionCorreo(true); // Abre la validación
+  };
+
+  // 🔥 2. Función que realmente guarda y envía el correo (Ocurre al dar Aceptar) 🔥
+  const procesarRadicadoFinal = async () => {
+    setMostrarConfirmacionCorreo(false);
     setCargando(true);
     setErrorMsg('');
 
@@ -107,28 +95,49 @@ export default function Inicio() {
     const fechaLim = new Date(); 
     fechaLim.setDate(fechaLim.getDate() + diasSLA); 
 
-    const { error } = await supabase.from('casos').insert([{
-      ciudadano_nombre: nombre, 
-      ciudadano_telefono: telefono, 
-      ciudadano_correo: correo, 
-      tipo_solicitud_id: parseInt(tipoPQRSF), 
-      subcategoria: subcategoria, 
-      descripcion_caso: descripcion, 
-      fecha_limite: fechaLim.toISOString(), 
-      estado: 'Abierto', 
-      habeas_data: habeasData,
-      recibir_publicidad: publicidad
-    }]);
+    // Guardamos en Supabase y pedimos que nos devuelva el ID creado (.select())
+    const { data: nuevoCaso, error } = await supabase.from('casos').insert([{
+      ciudadano_nombre: nombre, ciudadano_telefono: telefono, ciudadano_correo: correo, 
+      tipo_solicitud_id: parseInt(tipoPQRSF), subcategoria: subcategoria, descripcion_caso: descripcion, 
+      fecha_limite: fechaLim.toISOString(), estado: 'Abierto', habeas_data: habeasData, recibir_publicidad: publicidad
+    }]).select();
 
-    if (!error) {
+    if (!error && nuevoCaso && nuevoCaso.length > 0) {
+      const idRadicadoGenerado = nuevoCaso[0].id;
+      
+      // ====================================================================
+      // 📧 DISPARADOR DE EMAILJS (API INVISIBLE) 📧
+      // ====================================================================
+      const datosEmail = {
+        service_id: 'TU_SERVICE_ID',           // REEMPLAZA ESTO
+        template_id: 'TU_TEMPLATE_CREACION',   // REEMPLAZA ESTO
+        user_id: 'TU_PUBLIC_KEY',              // REEMPLAZA ESTO
+        template_params: {
+          correo_ciudadano: correo,
+          nombre_ciudadano: nombre,
+          numero_radicado: idRadicadoGenerado,
+          fecha_creacion: new Date().toLocaleDateString(),
+          tipo_solicitud: tipoSeleccionado?.nombre || 'Solicitud',
+          categoria: subcategoria,
+          detalle_caso: descripcion
+        }
+      };
+
+      // Enviamos el correo sin que el usuario se entere
+      fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosEmail)
+      }).catch(err => console.log("Aviso: El caso se guardó, pero hubo un tema enviando el correo automático.", err));
+      // ====================================================================
+
       setToastMsg("✅ ¡Radicado con éxito! El equipo del #5 está en marcha.");
-      setNombre(''); setTelefono(''); setCorreo(''); setDescripcion(''); 
-      setHabeasData(false); setPublicidad(false); 
+      setNombre(''); setTelefono(''); setCorreo(''); setDescripcion(''); setHabeasData(false); setPublicidad(false); 
       if (tiposSolicitud.length > 0) setTipoPQRSF(tiposSolicitud[0].id);
       if (config.listaSubcategorias.length > 0) setSubcategoria(config.listaSubcategorias[0]);
       setTimeout(() => { setToastMsg(''); }, 4000);
     } else { 
-      setErrorMsg("Error: " + error.message);
+      setErrorMsg("Error: " + (error?.message || "Ocurrió un error inesperado"));
       setTimeout(() => { setErrorMsg(''); }, 6000);
     }
     setCargando(false);
@@ -143,36 +152,30 @@ export default function Inicio() {
       <style>{`
         html { scroll-behavior: smooth; }
         * { box-sizing: border-box; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popUp { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 
         .hero-title { font-size: clamp(2.2rem, 5vw, 4.5rem) !important; color: #ffffff !important; font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; zIndex: 2; }
         .hero-subtitle { font-size: clamp(1rem, 2vw, 1.5rem) !important; color: #f1f5f9 !important; margin-bottom: 40px; line-height: 1.5; font-weight: 500; max-width: 800px; margin-left: auto; margin-right: auto; position: relative; zIndex: 2; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-
         .card-gestion { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
         .card-gestion:hover { transform: translateY(-15px); box-shadow: 0 20px 40px rgba(0,51,102,0.15) !important; }
         .btn-primario { transition: 0.3s; position: relative; zIndex: 2; }
         .btn-primario:hover { transform: scale(1.05); background-color: #c20510 !important; }
         .input-hover:focus { border-color: #003366 !important; box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1) !important; }
-        
         .btn-social { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px 35px; border-radius: 50px; color: white !important; font-weight: 800; text-decoration: none; font-size: 1.1rem; min-width: 150px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .btn-social:hover { transform: translateY(-8px); color: white !important; }
         .btn-social.fb { background: #1877F2; box-shadow: 0 10px 20px rgba(24, 119, 242, 0.3); }
         .btn-social.ig { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); box-shadow: 0 10px 20px rgba(220, 39, 67, 0.3); }
         .btn-social.tk { background: #000000; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); border: 2px solid #222; }
         .btn-social.tk:hover { box-shadow: -4px 4px 0 #00f2fe, 4px -4px 0 #fe0979; border-color: transparent; }
-
         .zoom-img { transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: zoom-in; }
         .zoom-img:hover { transform: scale(1.03); }
-
         .brand-modal::-webkit-scrollbar { width: 10px; }
         .brand-modal::-webkit-scrollbar-track { background: #f8fafc; }
         .brand-modal::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .brand-modal::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
         .img-difuminada-wrapper { position: relative; width: 100%; height: 100%; border-radius: 30px; overflow: hidden; display: inline-block; }
         .img-difuminada-wrapper::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 60px 30px #ffffff; border-radius: 30px; pointer-events: none; }
-
         input, select, textarea { color: #0f172a !important; background-color: #ffffff !important; color-scheme: light !important; }
         input::placeholder, textarea::placeholder { color: #94a3b8 !important; opacity: 1 !important; }
         .checkbox-custom { accent-color: #E30613; width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
@@ -198,18 +201,11 @@ export default function Inicio() {
       `}</style>
 
       <nav className="nav-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 5%', backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 1000 }}>
-        
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {config.identidad.logo ? (
-            <img src={config.identidad.logo} alt="Logo Oficial" style={{ height: '35px', maxWidth: '120px', objectFit: 'contain', borderRadius: '5px' }} />
-          ) : (
-            <div style={{ backgroundColor: '#E30613', color: '#fff', padding: '5px 12px', borderRadius: '5px', fontWeight: '900', fontSize: '1.5rem' }}>CR</div>
-          )}
+          {config.identidad.logo ? ( <img src={config.identidad.logo} alt="Logo Oficial" style={{ height: '35px', maxWidth: '120px', objectFit: 'contain', borderRadius: '5px' }} /> ) : ( <div style={{ backgroundColor: '#E30613', color: '#fff', padding: '5px 12px', borderRadius: '5px', fontWeight: '900', fontSize: '1.5rem' }}>CR</div> )}
           <span style={{ fontWeight: '800', fontSize: '1.1rem', color: '#003366' }}>{config.identidad.texto}</span>
         </div>
-        
         <button className="btn-menu-movil" onClick={() => setMenuMovilAbierto(true)}>☰</button>
-
         <div className="nav-links" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           {config.bio.titulo && ( <button onClick={() => setMostrarModalBio(true)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s', cursor: 'pointer', padding: 0 }}>Conóceme</button> )}
           <a href="#gestion" style={{ textDecoration: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' }}>Gestión</a>
@@ -232,18 +228,9 @@ export default function Inicio() {
         </div>
       )}
 
-      {/* 🔥 HERO SECTION CORREGIDO (FOTO MUY CLARA Y COBIJA MÁS TRANSPARENTE) 🔥 */}
-      <header className="hero-header" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#001a33' }}>
-        
-        {/* 🔥 LA FOTO: Aquí le subí opacity a 0.65 para que brille fuerte 🔥 */}
-        {config.identidad.fondoHero && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.65, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
-        )}
-        
-        {/* 🔥 LA COBIJA AZUL: Mucho más transparente para dejar ver la foto (0.4 y 0.7) 🔥 */}
+      <header className="hero-header" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#002244' }}>
+        {config.identidad.fondoHero && ( <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.65, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div> )}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,34,68,0.4) 0%, rgba(0,15,30,0.7) 100%)', zIndex: 1 }}></div>
-
-        {/* Textos y contenido */}
         <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none', zIndex: 2 }}>5</div>
         <div style={{ position: 'relative', zIndex: 3, padding: '120px 5%', textAlign: 'center' }}>
           <h1 className="hero-title">{config.textos.tituloHero}</h1>
@@ -253,13 +240,14 @@ export default function Inicio() {
       </header>
 
       <div className="section-padding" style={{ maxWidth: '1200px', margin: '0 auto', padding: '80px 5%' }}>
+        
+        {/* ... (Secciones GESTION y REDES se mantienen igual) ... */}
         <section id="gestion" style={{ marginBottom: '100px' }}>
           <div style={{ textAlign: 'center', marginBottom: '60px' }}>
             <h2 className="title-responsive" style={{ fontSize: '2.8rem', color: '#003366', fontWeight: '800', lineHeight: '1.2' }}>📢 {config.textos.tituloNoticias}</h2>
             <div style={{ width: '60px', height: '5px', backgroundColor: '#E30613', margin: '15px auto' }}></div>
             <p style={{ color: '#666', fontSize: '1.1rem' }}>{config.textos.descNoticias}</p>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '40px' }}>
             {noticias.map(n => (
               <div key={n.id} className="card-gestion" style={{ borderRadius: '25px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', backgroundColor: '#fff', border: '1px solid #eee' }}>
@@ -281,11 +269,9 @@ export default function Inicio() {
           <section id="redes" style={{ marginBottom: '100px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '40px', padding: '60px 5%', color: 'white', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.15)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-100px', left: '-100px', width: '300px', height: '300px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '50%' }}></div>
             <div style={{ position: 'absolute', bottom: '-100px', right: '-100px', width: '300px', height: '300px', background: 'rgba(227, 6, 19, 0.1)', borderRadius: '50%' }}></div>
-            
             <div style={{ position: 'relative', zIndex: 2 }}>
               <h2 className="title-responsive" style={{ fontSize: '2.5rem', fontWeight: '900', margin: '0 0 15px 0', color: 'white', lineHeight: '1.2' }}>{config.textos.tituloRedes}</h2>
               <p style={{ fontSize: '1.15rem', color: '#cbd5e1', margin: '0 auto 40px auto', maxWidth: '650px', lineHeight: '1.6' }}>{config.textos.descRedes}</p>
-              
               <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
                 {config.redes.facebook && <a href={config.redes.facebook} target="_blank" rel="noopener noreferrer" className="btn-social fb">📘 Facebook</a>}
                 {config.redes.instagram && <a href={config.redes.instagram} target="_blank" rel="noopener noreferrer" className="btn-social ig">📸 Instagram</a>}
@@ -309,7 +295,8 @@ export default function Inicio() {
             </div>
           </div>
 
-          <form onSubmit={enviarRadicado} className="form-padding" style={{ backgroundColor: '#fff', padding: '35px', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)', width: '100%' }}>
+          {/* 🔥 FORMULARIO: AHORA LLAMA A preEnviarRadicado 🔥 */}
+          <form onSubmit={preEnviarRadicado} className="form-padding" style={{ backgroundColor: '#fff', padding: '35px', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)', width: '100%' }}>
             <div style={{ marginBottom: '15px' }}>
               <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px' }}>Nombre completo</label>
               <input type="text" placeholder="Ej. Carlos Mendoza" value={nombre} onChange={e=>setNombre(e.target.value)} required className="input-hover" style={inputStyle} />
@@ -317,7 +304,7 @@ export default function Inicio() {
             
             <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                 <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>WhatsApp</label><input type="tel" placeholder="300 000 0000" value={telefono} onChange={e=>setTelefono(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0}} /></div>
-                <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Correo</label><input type="email" placeholder="ejemplo@correo.com" value={correo} onChange={e=>setCorreo(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0}} /></div>
+                <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', marginLeft: '5px', display: 'block', marginBottom: '5px' }}>Correo Electrónico</label><input type="email" placeholder="ejemplo@correo.com" value={correo} onChange={e=>setCorreo(e.target.value)} required className="input-hover" style={{...inputStyle, marginBottom: 0}} /></div>
             </div>
             
             <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
@@ -339,7 +326,6 @@ export default function Inicio() {
                   Acepto la <button type="button" onClick={() => setMostrarModalHabeas(true)} style={{ background: 'transparent', border: 'none', color: '#E30613', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontWeight: 'bold', fontSize: '0.85rem' }}>Política de Tratamiento de Datos Personales</button>. *
                 </span>
               </label>
-
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
                 <input type="checkbox" checked={publicidad} onChange={e => setPublicidad(e.target.checked)} className="checkbox-custom" />
                 <span style={{ fontSize: '0.85rem', color: '#0f172a', lineHeight: '1.4' }}>
@@ -352,6 +338,36 @@ export default function Inicio() {
           </form>
         </section>
       </div>
+
+      {/* =========================================================================
+          🔥 MODAL DE CONFIRMACIÓN DE CORREO 🔥
+          ========================================================================= */}
+      {mostrarConfirmacionCorreo && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.8)', zIndex: 3500, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backdropFilter: 'blur(5px)', animation: 'fadeIn 0.2s' }}>
+          <div style={{ backgroundColor: '#ffffff', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '40px', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', textAlign: 'center', animation: 'popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+            
+            <div style={{ width: '60px', height: '60px', background: '#e0f2fe', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 20px auto', fontSize: '1.8rem' }}>📧</div>
+            <h2 style={{ fontSize: '1.8rem', color: '#0f172a', fontWeight: '900', margin: '0 0 15px 0' }}>Verifica tu Correo</h2>
+            
+            <p style={{ fontSize: '1rem', color: '#475569', lineHeight: '1.6', margin: '0 0 20px 0' }}>
+              Para validar el seguimiento de tu solicitud, es importante que el correo registrado sea un correo al cual tengas acceso actualmente:
+            </p>
+            
+            <div style={{ background: '#f8fafc', border: '2px dashed #cbd5e1', padding: '15px', borderRadius: '12px', fontSize: '1.2rem', fontWeight: 'bold', color: '#003366', margin: '0 0 30px 0', wordBreak: 'break-all' }}>
+              {correo}
+            </div>
+
+            <div style={{ display: 'flex', gap: '15px', flexDirection: 'column' }}>
+              <button onClick={procesarRadicadoFinal} style={{ width: '100%', padding: '16px', backgroundColor: '#E30613', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 10px rgba(227, 6, 19, 0.3)' }}>
+                Aceptar y Radicar ✅
+              </button>
+              <button onClick={() => setMostrarConfirmacionCorreo(false)} style={{ width: '100%', padding: '16px', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }}>
+                Modificar correo ✏️
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL HABEAS DATA */}
       {mostrarModalHabeas && (
@@ -369,8 +385,7 @@ export default function Inicio() {
         </div>
       )}
 
-
-      {/* MODAL BIOGRAFÍA PREMIUM */}
+      {/* RESTO DE MODALES (BIO, EXPANDIR FOTO, NOTICIAS) SE MANTIENEN INTACTOS... */}
       {mostrarModalBio && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 26, 51, 0.95)', zIndex: 2500, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0', backdropFilter: 'blur(15px)' }}>
           <div className="brand-modal" style={{ backgroundColor: '#f8fafc', width: '100%', height: '100vh', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}>
