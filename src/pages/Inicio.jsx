@@ -146,8 +146,8 @@ export default function Inicio() {
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .hero-title { font-size: clamp(2.2rem, 5vw, 4.5rem) !important; color: #ffffff !important; font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative; zIndex: 2; }
-        .hero-subtitle { font-size: clamp(1rem, 2vw, 1.5rem) !important; color: #e2e8f0 !important; margin-bottom: 40px; line-height: 1.5; font-weight: 400; max-width: 800px; margin-left: auto; margin-right: auto; position: relative; zIndex: 2; }
+        .hero-title { font-size: clamp(2.2rem, 5vw, 4.5rem) !important; color: #ffffff !important; font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; zIndex: 2; }
+        .hero-subtitle { font-size: clamp(1rem, 2vw, 1.5rem) !important; color: #f1f5f9 !important; margin-bottom: 40px; line-height: 1.5; font-weight: 500; max-width: 800px; margin-left: auto; margin-right: auto; position: relative; zIndex: 2; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
 
         .card-gestion { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
         .card-gestion:hover { transform: translateY(-15px); box-shadow: 0 20px 40px rgba(0,51,102,0.15) !important; }
@@ -232,16 +232,16 @@ export default function Inicio() {
         </div>
       )}
 
-      {/* 🔥 HERO SECTION CORREGIDO (FONDO MÁS VISIBLE) 🔥 */}
-      <header className="hero-header" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#002244' }}>
+      {/* 🔥 HERO SECTION CORREGIDO (FOTO MUY CLARA Y COBIJA MÁS TRANSPARENTE) 🔥 */}
+      <header className="hero-header" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#001a33' }}>
         
-        {/* Capa de la imagen de fondo: Le subí la opacidad de 0.15 a 0.45 y quité el mixBlendMode para que se note */}
+        {/* 🔥 LA FOTO: Aquí le subí opacity a 0.65 para que brille fuerte 🔥 */}
         {config.identidad.fondoHero && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.45, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.65, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
         )}
         
-        {/* Gradiente corporativo oscuro MÁS TRANSPARENTE (0.6 a 0.8 en vez de 0.9 a 0.95) */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,34,68,0.6) 0%, rgba(0,15,30,0.8) 100%)', zIndex: 1 }}></div>
+        {/* 🔥 LA COBIJA AZUL: Mucho más transparente para dejar ver la foto (0.4 y 0.7) 🔥 */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,34,68,0.4) 0%, rgba(0,15,30,0.7) 100%)', zIndex: 1 }}></div>
 
         {/* Textos y contenido */}
         <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none', zIndex: 2 }}>5</div>
