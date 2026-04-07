@@ -9,6 +9,8 @@ export default function Inicio() {
 
   const [config, setConfig] = useState({
     listaPQRSF: [], listaSubcategorias: [],
+    // 🔥 ESTADO DE IDENTIDAD ACTUALIZADO 🔥
+    identidad: { logo: '', texto: 'CONCEJAL #5 Mosquera', fondoHero: '' },
     textos: { 
       tituloHero: 'EL CAMBIO SIGUE', descHero: 'Gestión real, resultados para la gente. Vota Cambio Radical #5', 
       tituloForm: 'VENTANILLA CIUDADANA', descForm: '¿Tienes una petición, queja o una idea para mejorar nuestro municipio? Mi equipo jurídico y técnico revisará tu caso personalmente.', 
@@ -46,6 +48,12 @@ export default function Inicio() {
       if (dataConfig && !errorConfig) {
         setConfig({
           listaPQRSF: dataConfig.lista_pqrsf || [], listaSubcategorias: dataConfig.lista_subcategorias || [],
+          // 🔥 CARGAMOS NUEVA IDENTIDAD 🔥
+          identidad: { 
+            logo: dataConfig.logo_url || '', 
+            texto: dataConfig.navbar_texto || 'CONCEJAL #5 Mosquera', 
+            fondoHero: dataConfig.hero_fondo_url || '' 
+          },
           textos: {
             tituloHero: dataConfig.titulo_hero || 'EL CAMBIO SIGUE', descHero: dataConfig.descripcion_hero || 'Gestión real, resultados para la gente. Vota Cambio Radical #5',
             tituloForm: dataConfig.titulo_formulario || 'VENTANILLA CIUDADANA', descForm: dataConfig.descripcion_formulario || '¿Tienes una petición, queja o una idea para mejorar nuestro municipio? Mi equipo jurídico y técnico revisará tu caso personalmente.',
@@ -109,7 +117,7 @@ export default function Inicio() {
       subcategoria: subcategoria, 
       descripcion_caso: descripcion, 
       fecha_limite: fechaLim.toISOString(), 
-      estado: 'Abierto', // 🔥 EL ARREGLO MÁGICO ESTÁ AQUÍ (Antes decía 'ABIERTO') 🔥
+      estado: 'Abierto', 
       habeas_data: habeasData,
       recibir_publicidad: publicidad
     }]);
@@ -140,12 +148,12 @@ export default function Inicio() {
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .hero-title { font-size: clamp(2.2rem, 5vw, 4.5rem) !important; color: #ffffff !important; font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .hero-subtitle { font-size: clamp(1rem, 2vw, 1.5rem) !important; color: #e2e8f0 !important; margin-bottom: 40px; line-height: 1.5; font-weight: 400; max-width: 800px; margin-left: auto; margin-right: auto; }
+        .hero-title { font-size: clamp(2.2rem, 5vw, 4.5rem) !important; color: #ffffff !important; font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative; zIndex: 2; }
+        .hero-subtitle { font-size: clamp(1rem, 2vw, 1.5rem) !important; color: #e2e8f0 !important; margin-bottom: 40px; line-height: 1.5; font-weight: 400; max-width: 800px; margin-left: auto; margin-right: auto; position: relative; zIndex: 2; }
 
         .card-gestion { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
         .card-gestion:hover { transform: translateY(-15px); box-shadow: 0 20px 40px rgba(0,51,102,0.15) !important; }
-        .btn-primario { transition: 0.3s; }
+        .btn-primario { transition: 0.3s; position: relative; zIndex: 2; }
         .btn-primario:hover { transform: scale(1.05); background-color: #c20510 !important; }
         .input-hover:focus { border-color: #003366 !important; box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1) !important; }
         
@@ -191,51 +199,58 @@ export default function Inicio() {
         }
       `}</style>
 
+      {/* NAVBAR */}
       <nav className="nav-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 5%', backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 1000 }}>
+        
+        {/* 🔥 IDENTIDAD VISUAL DINÁMICA (LOGO + TEXTO) 🔥 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ backgroundColor: '#E30613', color: '#fff', padding: '5px 12px', borderRadius: '5px', fontWeight: '900', fontSize: '1.5rem' }}>CR</div>
-          <span style={{ fontWeight: '800', fontSize: '1.1rem', color: '#003366' }}>CONCEJAL #5 Mosquera</span>
+          {config.identidad.logo ? (
+            <img src={config.identidad.logo} alt="Logo Oficial" style={{ height: '35px', maxWidth: '120px', objectFit: 'contain', borderRadius: '5px' }} />
+          ) : (
+            <div style={{ backgroundColor: '#E30613', color: '#fff', padding: '5px 12px', borderRadius: '5px', fontWeight: '900', fontSize: '1.5rem' }}>CR</div>
+          )}
+          <span style={{ fontWeight: '800', fontSize: '1.1rem', color: '#003366' }}>{config.identidad.texto}</span>
         </div>
         
         <button className="btn-menu-movil" onClick={() => setMenuMovilAbierto(true)}>☰</button>
 
         <div className="nav-links" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          {config.bio.titulo && (
-            <button onClick={() => setMostrarModalBio(true)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s', cursor: 'pointer', padding: 0 }}>
-              Conóceme
-            </button>
-          )}
+          {config.bio.titulo && ( <button onClick={() => setMostrarModalBio(true)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s', cursor: 'pointer', padding: 0 }}>Conóceme</button> )}
           <a href="#gestion" style={{ textDecoration: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' }}>Gestión</a>
           <a href="#redes" style={{ textDecoration: 'none', color: '#64748b', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' }}>Redes Sociales</a>
-          <Link to="/login" style={{ textDecoration: 'none', color: '#003366', fontWeight: 'bold', fontSize: '0.9rem', border: '2px solid #003366', padding: '8px 18px', borderRadius: '25px', transition: '0.3s', marginLeft: '10px' }}>
-            🔐 INGRESO
-          </Link>
+          <Link to="/login" style={{ textDecoration: 'none', color: '#003366', fontWeight: 'bold', fontSize: '0.9rem', border: '2px solid #003366', padding: '8px 18px', borderRadius: '25px', transition: '0.3s', marginLeft: '10px' }}>🔐 INGRESO</Link>
         </div>
       </nav>
 
+      {/* MENÚ MÓVIL */}
       {menuMovilAbierto && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)', animation: 'fadeIn 0.3s ease-in-out' }}>
           <button onClick={() => setMenuMovilAbierto(false)} style={{ position: 'absolute', top: '25px', right: '25px', border: 'none', background: '#f1f5f9', width: '50px', height: '50px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 'bold', color: '#003366' }}>✕</button>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', textAlign: 'center', width: '100%' }}>
-            {config.bio.titulo && (
-              <button onClick={() => { setMostrarModalBio(true); setMenuMovilAbierto(false); }} style={{ background: 'transparent', border: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem', cursor: 'pointer' }}>
-                Conóceme
-              </button>
-            )}
+            {config.bio.titulo && ( <button onClick={() => { setMostrarModalBio(true); setMenuMovilAbierto(false); }} style={{ background: 'transparent', border: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem', cursor: 'pointer' }}>Conóceme</button> )}
             <a href="#gestion" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem' }}>Gestión</a>
             <a href="#redes" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#003366', fontWeight: '900', fontSize: '2rem' }}>Redes Sociales</a>
             <a href="#radicar" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: '#E30613', fontWeight: '900', fontSize: '2rem' }}>Radicar Solicitud</a>
             <div style={{ width: '50px', height: '4px', background: '#cbd5e1', margin: '10px auto' }}></div>
-            <Link to="/login" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: 'white', background: '#003366', fontWeight: 'bold', fontSize: '1.2rem', padding: '15px 40px', borderRadius: '30px', margin: '0 auto', display: 'inline-block' }}>
-              🔐 INGRESO AL SISTEMA
-            </Link>
+            <Link to="/login" onClick={() => setMenuMovilAbierto(false)} style={{ textDecoration: 'none', color: 'white', background: '#003366', fontWeight: 'bold', fontSize: '1.2rem', padding: '15px 40px', borderRadius: '30px', margin: '0 auto', display: 'inline-block' }}>🔐 INGRESO AL SISTEMA</Link>
           </div>
         </div>
       )}
 
-      <header className="hero-header" style={{ background: 'linear-gradient(135deg, #003366 0%, #001a33 100%)', padding: '120px 5%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none' }}>5</div>
-        <div style={{ position: 'relative', zIndex: 2 }}>
+      {/* 🔥 HERO SECTION CON FONDO MIMETIZADO 🔥 */}
+      <header className="hero-header" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#001a33' }}>
+        
+        {/* Capa de la imagen de fondo: Se mimetiza con baja opacidad */}
+        {config.identidad.fondoHero && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.15, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center', mixBlendMode: 'screen' }}></div>
+        )}
+        
+        {/* Gradiente corporativo oscuro que protege la lectura del texto */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,51,102,0.9) 0%, rgba(0,26,51,0.95) 100%)', zIndex: 1 }}></div>
+
+        {/* Textos y contenido */}
+        <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none', zIndex: 2 }}>5</div>
+        <div style={{ position: 'relative', zIndex: 3, padding: '120px 5%', textAlign: 'center' }}>
           <h1 className="hero-title">{config.textos.tituloHero}</h1>
           <p className="hero-subtitle">{config.textos.descHero}</p>
           <a href="#radicar" className="btn-primario" style={{ backgroundColor: '#E30613', color: '#ffffff', padding: '18px 45px', borderRadius: '50px', textDecoration: 'none', fontWeight: 'bold', fontSize: '1.1rem', boxShadow: '0 4px 15px rgba(227, 6, 19, 0.4)', display: 'inline-block' }}>RADICAR SOLICITUD AQUÍ</a>
@@ -343,6 +358,7 @@ export default function Inicio() {
         </section>
       </div>
 
+      {/* MODAL HABEAS DATA */}
       {mostrarModalHabeas && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.8)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
           <div style={{ backgroundColor: '#ffffff', width: '100%', maxWidth: '600px', borderRadius: '24px', maxHeight: '80vh', overflowY: 'auto', position: 'relative', padding: '40px', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>

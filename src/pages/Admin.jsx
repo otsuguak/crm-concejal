@@ -28,23 +28,30 @@ export default function Admin() {
   const [mostrarModalBio, setMostrarModalBio] = useState(false); 
 
   const [confSeguridad, setConfSeguridad] = useState({ requiere: true, codigo: '' });
-  const [confListas, setConfListas] = useState({ pqrsf: [], subcat: [], nuevoPqrsf: '', nuevaSubcat: '' });
+  const [confListas, setConfListas] = useState({ subcat: [], nuevaSubcat: '' });
+  const [nuevoTipoNombre, setNuevoTipoNombre] = useState('');
   
+  // 🔥 ESTADO DE IDENTIDAD ACTUALIZADO 🔥
   const [confTextos, setConfTextos] = useState({ 
+    navbarTexto: '', logoUrlActual: '', heroFondoActual: '', // NUEVOS
     tituloHero: '', descHero: '', tituloForm: '', descForm: '', tituloNoticias: '', descNoticias: '',
     tituloRedes: '', descRedes: '', urlFacebook: '', urlInstagram: '', urlTiktok: ''
   });
+  
+  const [archivoLogo, setArchivoLogo] = useState(null);
+  const [archivoHeroFondo, setArchivoHeroFondo] = useState(null);
 
   const [confBio, setConfBio] = useState({
-    titulo: '', descripcion: '', videoUrl: '', foto1Actual: '', foto2Actual: '', label: '',
-    foto2Descripcion: '' // 🔥 NUEVO CAMPO 🔥
+    titulo: '', descripcion: '', videoUrl: '', foto1Actual: '', foto2Actual: '', label: '', foto2Descripcion: ''
   });
   const [archivoBio1, setArchivoBio1] = useState(null);
   const [archivoBio2, setArchivoBio2] = useState(null);
 
   const [colaboradorAsignado, setColaboradorAsignado] = useState('');
   const [toastMsg, setToastMsg] = useState('');
+  
   const [respuestaActual, setRespuestaActual] = useState('');
+  const [archivoRespuesta, setArchivoRespuesta] = useState(null);
 
   const [idEdicion, setIdEdicion] = useState(null);
   const [titulo, setTitulo] = useState('');
@@ -89,9 +96,12 @@ export default function Admin() {
         const { data: configData } = await supabase.from('configuracion').select('*').eq('id', 1).single();
         if (configData) {
           setConfSeguridad({ requiere: configData.requiere_codigo ?? true, codigo: configData.codigo_secreto_registro || '' });
-          setConfListas({ pqrsf: configData.lista_pqrsf || [], subcat: configData.lista_subcategorias || [], nuevoPqrsf: '', nuevaSubcat: '' });
+          setConfListas({ subcat: configData.lista_subcategorias || [], nuevaSubcat: '' });
           
           setConfTextos({ 
+            navbarTexto: configData.navbar_texto || 'CONCEJAL #5 Mosquera',
+            logoUrlActual: configData.logo_url || '',
+            heroFondoActual: configData.hero_fondo_url || '',
             tituloHero: configData.titulo_hero || '', descHero: configData.descripcion_hero || '', 
             tituloForm: configData.titulo_formulario || '', descForm: configData.descripcion_formulario || '', 
             tituloNoticias: configData.titulo_noticias || '', descNoticias: configData.descripcion_noticias_seccion || '',
@@ -103,7 +113,7 @@ export default function Admin() {
             titulo: configData.bio_titulo || '', descripcion: configData.bio_descripcion || '', 
             videoUrl: configData.bio_video_url || '', foto1Actual: configData.bio_foto_1 || '', foto2Actual: configData.bio_foto_2 || '',
             label: configData.bio_label || 'PERFIL TERRITORIAL',
-            foto2Descripcion: configData.bio_foto_2_descripcion || '' // 🔥 CARGAR NUEVO CAMPO 🔥
+            foto2Descripcion: configData.bio_foto_2_descripcion || '' 
           });
         }
       }
@@ -122,11 +132,74 @@ export default function Admin() {
   }
 
   const mostrarExito = (mensaje) => { setToastMsg(mensaje); setTimeout(() => { setToastMsg(''); }, 3000); };
-  const subirArchivo = async (file, bucket) => { if (!file) return null; const name = `${Date.now()}-${file.name.replace(/\s/g, '_')}`; const { error } = await supabase.storage.from(bucket).upload(name, file); if (error) throw error; return supabase.storage.from(bucket).getPublicUrl(name).data.publicUrl; };
+  
+  const subirArchivo = async (file, bucket) => { 
+    if (!file) return null; 
+    const name = `${Date.now()}-${file.name.replace(/\s/g, '_')}`; 
+    const { error } = await supabase.storage.from(bucket).upload(name, file); 
+    if (error) throw error; 
+    return supabase.storage.from(bucket).getPublicUrl(name).data.publicUrl; 
+  };
 
   const guardarConfigSeguridad = async (e) => { e.preventDefault(); setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ requiere_codigo: confSeguridad.requiere, codigo_secreto_registro: confSeguridad.codigo }).eq('id', 1); if (error) throw error; mostrarExito("¡Seguridad del portal actualizada!"); setMostrarModalSeguridad(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
-  const guardarConfigCategorias = async () => { setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ lista_pqrsf: confListas.pqrsf, lista_subcategorias: confListas.subcat }).eq('id', 1); if (error) throw error; mostrarExito("¡Categorías actualizadas en el portal!"); setMostrarModalCategorias(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
-  const guardarConfigTextos = async (e) => { e.preventDefault(); setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ titulo_hero: confTextos.tituloHero, descripcion_hero: confTextos.descHero, titulo_formulario: confTextos.tituloForm, descripcion_formulario: confTextos.descForm, titulo_noticias: confTextos.tituloNoticias, descripcion_noticias_seccion: confTextos.descNoticias, titulo_redes: confTextos.tituloRedes, descripcion_redes: confTextos.descRedes, url_facebook: confTextos.urlFacebook, url_instagram: confTextos.urlInstagram, url_tiktok: confTextos.urlTiktok }).eq('id', 1); if (error) throw error; mostrarExito("¡Textos y Redes del portal actualizados!"); setMostrarModalTextos(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
+  
+  // 🔥 GUARDAR TEXTOS, LOGO Y FONDO 🔥
+  const guardarConfigTextos = async (e) => { 
+    e.preventDefault(); 
+    setSubiendo(true); 
+    try { 
+      const urlLogoFinal = archivoLogo ? await subirArchivo(archivoLogo, 'noticias') : confTextos.logoUrlActual;
+      const urlFondoFinal = archivoHeroFondo ? await subirArchivo(archivoHeroFondo, 'noticias') : confTextos.heroFondoActual;
+
+      const { error } = await supabase.from('configuracion').update({ 
+        navbar_texto: confTextos.navbarTexto,
+        logo_url: urlLogoFinal,
+        hero_fondo_url: urlFondoFinal,
+        titulo_hero: confTextos.tituloHero, descripcion_hero: confTextos.descHero, 
+        titulo_formulario: confTextos.tituloForm, descripcion_formulario: confTextos.descForm, 
+        titulo_noticias: confTextos.tituloNoticias, descripcion_noticias_seccion: confTextos.descNoticias, 
+        titulo_redes: confTextos.tituloRedes, descripcion_redes: confTextos.descRedes, 
+        url_facebook: confTextos.urlFacebook, url_instagram: confTextos.urlInstagram, url_tiktok: confTextos.urlTiktok 
+      }).eq('id', 1); 
+      
+      if (error) throw error; 
+      mostrarExito("¡Identidad, Textos y Redes actualizados!"); 
+      setMostrarModalTextos(false); setArchivoLogo(null); setArchivoHeroFondo(null);
+      cargarTodo(); 
+    } catch (err) { alert("Error: " + err.message); } 
+    setSubiendo(false); 
+  };
+
+  const agregarTipoSolicitud = async () => {
+    if (!nuevoTipoNombre.trim()) return;
+    setSubiendo(true);
+    try {
+      const { error } = await supabase.from('tipos_solicitud').insert([{ nombre: nuevoTipoNombre, dias_respuesta: 5 }]);
+      if (error) throw error;
+      mostrarExito("¡Categoría agregada exitosamente!");
+      setNuevoTipoNombre('');
+      cargarTodo(); 
+    } catch (err) { alert("Error al agregar: " + err.message); }
+    setSubiendo(false);
+  };
+
+  const eliminarTipoSolicitud = async (id) => {
+    if (!window.confirm("¿Seguro que deseas eliminar esta categoría? (No se puede si ya hay casos vinculados)")) return;
+    setSubiendo(true);
+    try {
+      const { error } = await supabase.from('tipos_solicitud').delete().eq('id', id);
+      if (error) { if (error.code === '23503') throw new Error("No puedes eliminar esta categoría porque ya tiene radicados vinculados."); throw error; }
+      mostrarExito("¡Categoría eliminada!"); cargarTodo();
+    } catch (err) { alert("Error: " + err.message); }
+    setSubiendo(false);
+  };
+
+  const guardarConfigSubcategorias = async () => { 
+    setSubiendo(true); 
+    try { const { error } = await supabase.from('configuracion').update({ lista_subcategorias: confListas.subcat }).eq('id', 1); if (error) throw error; mostrarExito("¡Subcategorías actualizadas!"); setMostrarModalCategorias(false); cargarTodo(); } 
+    catch (err) { alert("Error: " + err.message); } 
+    setSubiendo(false); 
+  };
 
   const guardarConfigBio = async (e) => {
     e.preventDefault();
@@ -136,20 +209,13 @@ export default function Admin() {
       const urlFoto2 = archivoBio2 ? await subirArchivo(archivoBio2, 'noticias') : confBio.foto2Actual;
 
       const { error } = await supabase.from('configuracion').update({
-        bio_titulo: confBio.titulo,
-        bio_descripcion: confBio.descripcion,
-        bio_video_url: confBio.videoUrl,
-        bio_foto_1: urlFoto1,
-        bio_foto_2: urlFoto2,
-        bio_label: confBio.label,
-        bio_foto_2_descripcion: confBio.foto2Descripcion // 🔥 GUARDAR NUEVO CAMPO 🔥
+        bio_titulo: confBio.titulo, bio_descripcion: confBio.descripcion, bio_video_url: confBio.videoUrl,
+        bio_foto_1: urlFoto1, bio_foto_2: urlFoto2, bio_label: confBio.label, bio_foto_2_descripcion: confBio.foto2Descripcion 
       }).eq('id', 1);
 
       if (error) throw error;
       mostrarExito("¡Biografía del Concejal actualizada con éxito!");
-      setMostrarModalBio(false);
-      setArchivoBio1(null); setArchivoBio2(null);
-      cargarTodo();
+      setMostrarModalBio(false); setArchivoBio1(null); setArchivoBio2(null); cargarTodo();
     } catch (err) { alert("Error al guardar Biografía: " + err.message); }
     setSubiendo(false);
   };
@@ -157,16 +223,44 @@ export default function Admin() {
   const abrirParaCrear = () => { setIdEdicion(null); setTitulo(''); setDescripcion(''); setVideoUrl(''); setArchivoAntes(null); setArchivoDespues(null); setMostrarModalFormNoticia(true); };
   const abrirParaEditar = (n) => { setIdEdicion(n.id); setTitulo(n.titulo); setDescripcion(n.descripcion); setVideoUrl(n.video_url || ''); setMostrarModalFormNoticia(true); };
   
-  const guardarNoticia = async (e) => { e.preventDefault(); setSubiendo(true); try { const urlA = archivoAntes ? await subirArchivo(archivoAntes, 'noticias') : null; const urlD = archivoDespues ? await subirArchivo(archivoDespues, 'noticias') : null; const datos = { titulo, descripcion, video_url: videoUrl }; if (urlA) datos.imagen_1_antes = urlA; if (urlD) datos.imagen_1_despues = urlD; if (idEdicion) { await supabase.from('noticias').update(datos).eq('id', idEdicion); mostrarExito("¡Logro actualizado correctamente!"); } else { if (!archivoAntes || !archivoDespues) throw new Error("Las fotos Antes/Después son obligatorias."); datos.imagen_1_antes = urlA; datos.imagen_1_despues = urlD; await supabase.from('noticias').insert([datos]); mostrarExito("¡Nueva gestión publicada con éxito!"); } setMostrarModalFormNoticia(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
-  const eliminarNoticia = async (noticia) => { if (window.confirm("¿Estás seguro de borrar este logro?")) { setSubiendo(true); try { const extraerNombre = (url) => { if (!url) return null; try { const urlObj = new URL(url); const pathParts = urlObj.pathname.split('/'); return decodeURIComponent(pathParts[pathParts.length - 1]); } catch (error) { return null; } }; const imgA = extraerNombre(noticia.imagen_1_antes); const imgD = extraerNombre(noticia.imagen_1_despues); const archivosABorrar = [imgA, imgD].filter(Boolean); if (archivosABorrar.length > 0) { await supabase.storage.from('noticias').remove(archivosABorrar); } await supabase.from('noticias').delete().eq('id', noticia.id); mostrarExito("¡Logro eliminado del sistema!"); cargarTodo(); } catch (error) { alert("Error al borrar: " + error.message); } setSubiendo(false); } };
+  const guardarNoticia = async (e) => { e.preventDefault(); setSubiendo(true); try { const urlA = archivoAntes ? await subirArchivo(archivoAntes, 'noticias') : null; const urlD = archivoDespues ? await subirArchivo(archivoDespues, 'noticias') : null; const datos = { titulo, descripcion, video_url: videoUrl }; if (urlA) datos.imagen_1_antes = urlA; if (urlD) datos.imagen_1_despues = urlD; if (idEdicion) { await supabase.from('noticias').update(datos).eq('id', idEdicion); mostrarExito("¡Logro actualizado!"); } else { if (!archivoAntes || !archivoDespues) throw new Error("Las fotos Antes/Después son obligatorias."); datos.imagen_1_antes = urlA; datos.imagen_1_despues = urlD; await supabase.from('noticias').insert([datos]); mostrarExito("¡Nueva gestión publicada!"); } setMostrarModalFormNoticia(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
+  const eliminarNoticia = async (noticia) => { if (window.confirm("¿Estás seguro de borrar este logro?")) { setSubiendo(true); try { const extraerNombre = (url) => { if (!url) return null; try { const urlObj = new URL(url); const pathParts = urlObj.pathname.split('/'); return decodeURIComponent(pathParts[pathParts.length - 1]); } catch (error) { return null; } }; const imgA = extraerNombre(noticia.imagen_1_antes); const imgD = extraerNombre(noticia.imagen_1_despues); const archivosABorrar = [imgA, imgD].filter(Boolean); if (archivosABorrar.length > 0) { await supabase.storage.from('noticias').remove(archivosABorrar); } await supabase.from('noticias').delete().eq('id', noticia.id); mostrarExito("¡Logro eliminado!"); cargarTodo(); } catch (error) { alert("Error al borrar: " + error.message); } setSubiendo(false); } };
   const toggleVisibilidad = async (noticia) => { setSubiendo(true); try { const nuevoEstado = !noticia.visible; await supabase.from('noticias').update({ visible: nuevoEstado }).eq('id', noticia.id); cargarTodo(); } catch (error) { alert("Error al cambiar estado: " + error.message); } setSubiendo(false); };
-  const actualizarDiasSLA = async (idTipo, nuevosDias) => { setSubiendo(true); try { await supabase.from('tipos_solicitud').update({ dias_respuesta: parseInt(nuevosDias) || 0 }).eq('id', idTipo); await cargarTodo(); mostrarExito("¡Tiempo de respuesta actualizado!"); } catch (error) { alert("Error al actualizar días: " + error.message); } setSubiendo(false); };
+  const actualizarDiasSLA = async (idTipo, nuevosDias) => { setSubiendo(true); try { await supabase.from('tipos_solicitud').update({ dias_respuesta: parseInt(nuevosDias) || 0 }).eq('id', idTipo); await cargarTodo(); mostrarExito("¡Tiempo actualizado!"); } catch (error) { alert("Error: " + error.message); } setSubiendo(false); };
 
   const calcularColorEstado = (fechaLimiteStr, estadoActual) => { if (estadoActual && estadoActual.toLowerCase() === 'solucionado') return ''; if (!fechaLimiteStr) return ''; const hoy = new Date(); const limite = new Date(fechaLimiteStr); const diffDays = Math.ceil((limite.getTime() - hoy.getTime()) / (1000 * 3600 * 24)); if (diffDays < 0) { return 'fila-vencida'; } else if (diffDays >= 0 && diffDays <= 2) { return 'fila-alerta'; } return ''; };
 
-  const agregarNotaAlHistorial = async (idCaso) => { if (!respuestaActual.trim()) return; setSubiendo(true); try { const fechaObj = new Date(); const fechaTexto = fechaObj.toLocaleString(); const nombreAutor = perfil.nombre || (perfil.rol === 'admin' ? 'Administrador' : 'Asesor'); const nuevaNota = `[${fechaTexto}] - ${nombreAutor}:\n${respuestaActual}`; const historialPrevio = casoSeleccionado.respuesta_gestion || ''; const nuevoHistorialCompleto = historialPrevio ? `${historialPrevio}\n\n=========================\n\n${nuevaNota}` : nuevaNota; const { error } = await supabase.from('casos').update({ respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Anotación agregada al historial!"); setCasoSeleccionado(prev => ({ ...prev, respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() })); setRespuestaActual(''); cargarTodo(); } catch (err) { alert("Error al guardar nota: " + err.message); } setSubiendo(false); };
-  const asignarCaso = async (idCaso) => { if (!colaboradorAsignado) { alert("⚠️ Selecciona un asesor."); return; } setSubiendo(true); try { const { error } = await supabase.from('casos').update({ estado: 'Escalado', colaborador_id: colaboradorAsignado }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Caso escalado!"); setCasoSeleccionado(null); cargarTodo(); } catch (err) { alert("Error al escalar: " + err.message); } setSubiendo(false); };
-  const solucionarCaso = async (idCaso) => { if (window.confirm("¿Confirmas que este caso ya fue gestionado?")) { setSubiendo(true); try { const { error } = await supabase.from('casos').update({ estado: 'Solucionado' }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Caso marcado como solucionado!"); setCasoSeleccionado(null); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); } };
+  const agregarNotaAlHistorial = async (idCaso) => { 
+    if (!respuestaActual.trim() && !archivoRespuesta) return; 
+    setSubiendo(true); 
+    try { 
+      let urlDocumentoAdjunto = null;
+      if (archivoRespuesta) { urlDocumentoAdjunto = await subirArchivo(archivoRespuesta, 'noticias'); }
+
+      const fechaObj = new Date(); 
+      const fechaTexto = fechaObj.toLocaleString(); 
+      const nombreAutor = perfil.nombre || (perfil.rol === 'admin' ? 'Administrador' : 'Asesor'); 
+      
+      let textoBase = respuestaActual.trim() ? respuestaActual : 'Documento oficial adjuntado.';
+      if (urlDocumentoAdjunto) { textoBase += `\n📎 Documento Adjunto: ${urlDocumentoAdjunto}`; }
+
+      const nuevaNota = `[${fechaTexto}] - ${nombreAutor}:\n${textoBase}`; 
+      const historialPrevio = casoSeleccionado.respuesta_gestion || ''; 
+      const nuevoHistorialCompleto = historialPrevio ? `${historialPrevio}\n\n=========================\n\n${nuevaNota}` : nuevaNota; 
+      
+      const { error } = await supabase.from('casos').update({ respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() }).eq('id', idCaso); 
+      if (error) throw error; 
+      
+      mostrarExito("¡Respuesta guardada!"); 
+      setCasoSeleccionado(prev => ({ ...prev, respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() })); 
+      setRespuestaActual(''); 
+      setArchivoRespuesta(null); 
+    } catch (err) { alert("Error: " + err.message); } 
+    setSubiendo(false); 
+  };
+
+  const asignarCaso = async (idCaso) => { if (!colaboradorAsignado) { alert("⚠️ Selecciona un asesor."); return; } setSubiendo(true); try { const { error } = await supabase.from('casos').update({ estado: 'Escalado', colaborador_id: colaboradorAsignado }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Caso escalado!"); setCasoSeleccionado(null); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
+  const solucionarCaso = async (idCaso) => { if (window.confirm("¿Confirmas que este caso ya fue gestionado?")) { setSubiendo(true); try { const { error } = await supabase.from('casos').update({ estado: 'Solucionado' }).eq('id', idCaso); if (error) throw error; mostrarExito("¡Caso solucionado!"); setCasoSeleccionado(null); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); } };
 
   const casosFiltrados = casos.filter(c => {
     const matchNombre = c.ciudadano_nombre.toLowerCase().includes(busqueda.toLowerCase());
@@ -177,6 +271,17 @@ export default function Admin() {
     let matchSLA = true; if (filtroSLA === 'atiempo') { matchSLA = claseSLA === ''; } else if (filtroSLA) { matchSLA = claseSLA === filtroSLA; }
     return matchNombre && matchAsunto && matchEstado && matchResponsable && matchSLA;
   });
+
+  const formatearTextoChat = (textoRaw) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const partes = textoRaw.split(urlRegex);
+    return partes.map((parte, i) => {
+      if (parte.match(urlRegex)) {
+        return ( <a key={i} href={parte} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '8px', padding: '6px 12px', background: '#e0f2fe', color: '#0284c7', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none', border: '1px solid #bae6fd' }}>Abrir Documento 📄</a> );
+      }
+      return <span key={i}>{parte}</span>;
+    });
+  };
 
   if (!perfil) return ( <div className="cr5-loader-overlay"><div className="cr5-loader-container"><div className="cr5-aro-azul"></div><div className="cr5-logo-centro">5</div></div><p className="cr5-loader-texto">INICIANDO CRM...</p></div> );
 
@@ -203,9 +308,9 @@ export default function Admin() {
               <h4 style={{color: '#64748b', fontSize: '0.75rem', margin: '25px 0 5px 10px', letterSpacing: '1px'}}>⚙️ AJUSTES DEL PORTAL</h4>
               <button onClick={() => setMostrarModalSeguridad(true)} style={btnStyle(false)}>🔐 Cód. Seguridad</button>
               <button onClick={() => setMostrarModalCategorias(true)} style={btnStyle(false)}>📂 Cat. Solicitudes</button>
-              <button onClick={() => setMostrarModalTextos(true)} style={btnStyle(false)}>🖥️ Textos y Redes</button>
+              <button onClick={() => setMostrarModalTextos(true)} style={btnStyle(false)}>🖥️ Identidad y Textos</button>
               <button onClick={() => setMostrarModalBio(true)} style={btnStyle(false)}>👤 Biografía Concejal</button>
-            </    >
+            </>
           )}
         </nav>
         
@@ -255,7 +360,7 @@ export default function Admin() {
                   <td><b>{c.ciudadano_nombre}</b></td><td>{c.tipos_solicitud?.nombre}</td><td><span style={badgeStyle(c.estado)}>{c.estado || 'ABIERTO'}</span></td>
                   {perfil.rol === 'admin' && ( <td>{colaboradores.find(col => col.id === c.colaborador_id)?.nombre || <span style={{color:'#94a3b8', fontStyle:'italic'}}>Sin asignar</span>}</td> )}
                   <td>{c.fecha_limite ? new Date(c.fecha_limite).toLocaleDateString() : 'Sin fecha'}</td>
-                  <td><button className="btn-gestionar-pro" onClick={() => { setCasoSeleccionado(c); setColaboradorAsignado(c.colaborador_id || ''); setRespuestaActual(''); }}>Gestionar</button></td>
+                  <td><button className="btn-gestionar-pro" onClick={() => { setCasoSeleccionado(c); setColaboradorAsignado(c.colaborador_id || ''); setRespuestaActual(''); setArchivoRespuesta(null); }}>Gestionar</button></td>
                 </tr>
               ))}
               {casosFiltrados.length === 0 && (<tr><td colSpan={perfil.rol === 'admin' ? "7" : "6"} style={{textAlign:'center', color:'#94a3b8', padding:'3rem', fontSize: '1.1rem'}}>No se encontraron radicados. 🧐</td></tr>)}
@@ -264,70 +369,138 @@ export default function Admin() {
         </div>
       </main>
 
-      {/* =========================================================================
-          🔥 MODAL: BIOGRAFÍA DEL CONCEJAL (ACTUALIZADO CON CAMPO EXTRA) 🔥
-          ========================================================================= */}
+      {/* =======================================================================
+          🔥 MODAL DE IDENTIDAD, TEXTOS Y REDES 🔥
+          ======================================================================= */}
+      {mostrarModalTextos && (
+        <div style={overlayStyle}>
+          <div style={{...modalStyle, maxWidth: '800px', maxHeight: '95vh', overflowY: 'auto'}}>
+            <button onClick={()=>setMostrarModalTextos(false)} style={closeBtnStyle}>✕</button>
+            <h2 style={modalTitleStyle}>🖥️ Identidad, Textos y Redes</h2>
+            <p style={modalDescStyle}>Edita el logo, los fondos y la información pública.</p>
+            <form onSubmit={guardarConfigTextos} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+              
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
+                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>1. Identidad Principal (Logo y Barra)</h4>
+                <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>Logo Superior (NavBar):</label>
+                <div style={{display:'flex', alignItems:'center', gap:'15px', marginBottom:'15px', marginTop:'5px'}}>
+                   <input type="file" onChange={e=>setArchivoLogo(e.target.files[0])} style={{flex: 1, fontSize:'0.85rem'}}/>
+                   {confTextos.logoUrlActual && !archivoLogo && ( <div style={{display:'flex', alignItems:'center', gap:'10px'}}><img src={confTextos.logoUrlActual} style={{height: '30px', borderRadius:'5px'}} /><span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Logo activo</span></div> )}
+                </div>
+                <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>Texto al lado del Logo:</label>
+                <input type="text" value={confTextos.navbarTexto} onChange={e => setConfTextos({...confTextos, navbarTexto: e.target.value})} placeholder="Ej. CONCEJAL #5 Mosquera" style={{...inStyle, marginTop:'5px'}} required />
+              </div>
+
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
+                <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>2. Pantalla Principal (Hero)</h4>
+                
+                <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>Fondo Inmersivo (Opcional):</label>
+                <p style={{fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 10px 0'}}>Sube una imagen. Se le aplicará un filtro azul oscuro encima para que el texto resalte siempre.</p>
+                <div style={{display:'flex', alignItems:'center', gap:'15px', marginBottom:'15px'}}>
+                   <input type="file" onChange={e=>setArchivoHeroFondo(e.target.files[0])} style={{flex: 1, fontSize:'0.85rem'}}/>
+                   {confTextos.heroFondoActual && !archivoHeroFondo && ( <div style={{display:'flex', alignItems:'center', gap:'10px'}}><img src={confTextos.heroFondoActual} style={{width: '60px', height: '40px', objectFit:'cover', borderRadius:'5px'}} /><span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Fondo activo</span></div> )}
+                </div>
+
+                <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>Título Principal:</label>
+                <input type="text" value={confTextos.tituloHero} onChange={e => setConfTextos({...confTextos, tituloHero: e.target.value})} placeholder="Ej. EL CAMBIO SIGUE" style={{...inStyle, marginBottom: '10px'}} required />
+                <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>Descripción Corta:</label>
+                <textarea value={confTextos.descHero} onChange={e => setConfTextos({...confTextos, descHero: e.target.value})} placeholder="Descripción debajo..." style={{...inStyle, height: '60px', resize: 'none'}} required />
+              </div>
+
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>3. Sección Formulario de PQRSF</h4><input type="text" value={confTextos.tituloForm} onChange={e => setConfTextos({...confTextos, tituloForm: e.target.value})} placeholder="Ej. VENTANILLA CIUDADANA" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descForm} onChange={e => setConfTextos({...confTextos, descForm: e.target.value})} placeholder="Texto que invita a la gente..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>4. Sección de Logros y Gestión</h4><input type="text" value={confTextos.tituloNoticias} onChange={e => setConfTextos({...confTextos, tituloNoticias: e.target.value})} placeholder="Ej. GESTIÓN EN TERRITORIO" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descNoticias} onChange={e => setConfTextos({...confTextos, descNoticias: e.target.value})} placeholder="Texto explicativo..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>5. Textos de Redes Sociales</h4><input type="text" value={confTextos.tituloRedes} onChange={e => setConfTextos({...confTextos, tituloRedes: e.target.value})} placeholder="Ej. 📱 ¡Conéctate!" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descRedes} onChange={e => setConfTextos({...confTextos, descRedes: e.target.value})} placeholder="Texto para invitar..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>6. Enlaces de Redes Sociales</h4><p style={{fontSize: '0.85rem', color: '#64748b', marginTop: '-10px', marginBottom: '15px'}}>Pega el link completo. Si dejas un espacio en blanco, ese botón no aparecerá.</p><div style={{display: 'grid', gap: '15px'}}><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#1877F2', display: 'flex', alignItems: 'center', gap: '5px'}}>📘 Facebook URL</label><input type="url" value={confTextos.urlFacebook} onChange={e => setConfTextos({...confTextos, urlFacebook: e.target.value})} placeholder="https://facebook.com/tu_pagina" style={{...inStyle, marginTop: '5px'}} /></div><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#E1306C', display: 'flex', alignItems: 'center', gap: '5px'}}>📸 Instagram URL</label><input type="url" value={confTextos.urlInstagram} onChange={e => setConfTextos({...confTextos, urlInstagram: e.target.value})} placeholder="https://instagram.com/tu_perfil" style={{...inStyle, marginTop: '5px'}} /></div><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#000000', display: 'flex', alignItems: 'center', gap: '5px'}}>🎵 TikTok URL</label><input type="url" value={confTextos.urlTiktok} onChange={e => setConfTextos({...confTextos, urlTiktok: e.target.value})} placeholder="https://tiktok.com/@tu_usuario" style={{...inStyle, marginTop: '5px'}} /></div></div></div>
+              
+              <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Guardar Cambios'}</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {mostrarModalCategorias && (
+        <div style={overlayStyle}>
+          <div style={{...modalStyle, maxWidth: '700px'}}>
+            <button onClick={()=>setMostrarModalCategorias(false)} style={closeBtnStyle}>✕</button>
+            <h2 style={modalTitleStyle}>📂 Configurar Categorías</h2>
+            <p style={modalDescStyle}>Agrega o elimina los tipos de solicitud. ¡Al agregar aquí, se conectan directo con los tiempos SLA!</p>
+            
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px'}}>
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
+                <h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Tipos Principales (PQRSF / SLA)</h4>
+                <div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px'}}>
+                  {tiposSolicitud.map((item) => ( 
+                    <span key={item.id} style={{background: '#e0e7ff', color: '#1d4ed8', padding: '5px 10px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px'}}>
+                      {item.nombre} 
+                      <button onClick={() => eliminarTipoSolicitud(item.id)} style={{background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontWeight:'bold'}}>✕</button>
+                    </span> 
+                  ))}
+                </div>
+                <div style={{display: 'flex', gap: '5px'}}>
+                  <input type="text" value={nuevoTipoNombre} onChange={e => setNuevoTipoNombre(e.target.value)} placeholder="Nueva solicitud..." style={{...inStyle, padding: '8px'}} />
+                  <button onClick={agregarTipoSolicitud} disabled={subiendo} style={{background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer', fontWeight:'bold'}}>+</button>
+                </div>
+              </div>
+
+              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
+                <h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Subcategorías (Temas)</h4>
+                <div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px', maxHeight: '150px', overflowY: 'auto'}}>
+                  {confListas.subcat.map((item, idx) => ( 
+                    <span key={idx} style={{background: '#fce7f3', color: '#b91c1c', padding: '5px 10px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px'}}>
+                      {item} <button onClick={() => setConfListas({...confListas, subcat: confListas.subcat.filter((_, i) => i !== idx)})} style={{background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontWeight:'bold'}}>✕</button>
+                    </span> 
+                  ))}
+                </div>
+                <div style={{display: 'flex', gap: '5px'}}>
+                  <input type="text" value={confListas.nuevaSubcat} onChange={e => setConfListas({...confListas, nuevaSubcat: e.target.value})} placeholder="Nueva subcat..." style={{...inStyle, padding: '8px'}} />
+                  <button onClick={() => { if(confListas.nuevaSubcat) setConfListas({...confListas, subcat: [...confListas.subcat, confListas.nuevaSubcat], nuevaSubcat: ''}) }} style={{background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer', fontWeight:'bold'}}>+</button>
+                </div>
+                <button onClick={guardarConfigSubcategorias} disabled={subiendo} style={{width: '100%', marginTop: '15px', padding: '10px', backgroundColor: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'}}>💾 Guardar Subcategorías</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {mostrarModalBio && (
         <div style={overlayStyle}>
           <div style={{...modalStyle, maxWidth: '800px', maxHeight: '95vh', overflowY: 'auto'}}>
             <button onClick={()=>setMostrarModalBio(false)} style={closeBtnStyle}>✕</button>
             <h2 style={modalTitleStyle}>👤 Biografía del Concejal</h2>
             <p style={modalDescStyle}>Cuenta la historia de Carlos Andrés Pabón al estilo Silicon Valley.</p>
-            
             <form onSubmit={guardarConfigBio} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
-              
               <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
                 <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>1. Título y Perfil</h4>
-                
                 <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Etiqueta Roja (ej. PERFIL TERRITORIAL)</label>
                 <input type="text" value={confBio.label} onChange={e => setConfBio({...confBio, label: e.target.value})} placeholder="Ej. PERFIL TERRITORIAL" style={{...inStyle, marginBottom: '15px'}} required />
-
                 <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Título Gigante</label>
                 <input type="text" value={confBio.titulo} onChange={e => setConfBio({...confBio, titulo: e.target.value})} placeholder="Ej. Conoce a Carlos Andrés Pabón" style={{...inStyle, marginBottom: '15px'}} required />
-                
                 <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Biografía Completa</label>
                 <textarea value={confBio.descripcion} onChange={e => setConfBio({...confBio, descripcion: e.target.value})} placeholder="Escribe aquí toda la historia..." style={{...inStyle, height: '150px', resize: 'vertical'}} required />
               </div>
-
               <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
                 <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>2. Video Multimedia (Opcional)</h4>
                 <input type="url" value={confBio.videoUrl} onChange={e => setConfBio({...confBio, videoUrl: e.target.value})} placeholder="Link de YouTube o Instagram..." style={inStyle} />
               </div>
-
               <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
                 <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>3. Galería Fotográfica</h4>
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
                   <div style={{background:'white', padding:'15px', borderRadius:'10px', border:'1px solid #cbd5e1'}}>
                     <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>📸 FOTO PRINCIPAL:</label>
                     <input type="file" onChange={e=>setArchivoBio1(e.target.files[0])} style={{marginTop:'10px', fontSize:'0.8rem', width:'100%'}}/>
-                    
-                    {confBio.foto1Actual && !archivoBio1 && (
-                        <div style={{marginTop: '10px', display:'flex', alignItems:'center', gap:'10px'}}>
-                            <img src={confBio.foto1Actual} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius:'8px'}} />
-                            <span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Foto asignada</span>
-                        </div>
-                    )}
+                    {confBio.foto1Actual && !archivoBio1 && ( <div style={{marginTop: '10px', display:'flex', alignItems:'center', gap:'10px'}}><img src={confBio.foto1Actual} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius:'8px'}} /><span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Foto asignada</span></div> )}
                   </div>
                   <div style={{background:'white', padding:'15px', borderRadius:'10px', border:'1px solid #cbd5e1'}}>
                     <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>📸 FOTO SECUNDARIA:</label>
                     <input type="file" onChange={e=>setArchivoBio2(e.target.files[0])} style={{marginTop:'10px', fontSize:'0.8rem', width:'100%'}}/>
-                    
-                    {confBio.foto2Actual && !archivoBio2 && (
-                        <div style={{marginTop: '10px', display:'flex', alignItems:'center', gap:'10px'}}>
-                            <img src={confBio.foto2Actual} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius:'8px'}} />
-                            <span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Foto asignada</span>
-                        </div>
-                    )}
+                    {confBio.foto2Actual && !archivoBio2 && ( <div style={{marginTop: '10px', display:'flex', alignItems:'center', gap:'10px'}}><img src={confBio.foto2Actual} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius:'8px'}} /><span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Foto asignada</span></div> )}
                   </div>
                 </div>
-
-                {/* 🔥 NUEVO CAMPO: DESCRIPCIÓN FOTO 2 🔥 */}
                 <div style={{marginTop: '20px'}}>
                   <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Descripción para Foto Secundaria (Opcional)</label>
                   <textarea value={confBio.foto2Descripcion} onChange={e => setConfBio({...confBio, foto2Descripcion: e.target.value})} placeholder="Escribe un pie de foto o descripción corta..." style={{...inStyle, height: '80px', resize: 'vertical'}} />
                 </div>
               </div>
-
               <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Publicar Biografía'}</button>
             </form>
           </div>
@@ -346,39 +519,6 @@ export default function Admin() {
                 {confSeguridad.requiere && (<div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b'}}>Código Actual:</label><input type="text" value={confSeguridad.codigo} onChange={(e) => setConfSeguridad({...confSeguridad, codigo: e.target.value})} placeholder="Ej. Secreto123" required style={inStyle} /></div>)}
               </div>
               <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Guardar Cambios'}</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {mostrarModalCategorias && (
-        <div style={overlayStyle}>
-          <div style={{...modalStyle, maxWidth: '700px'}}>
-            <button onClick={()=>setMostrarModalCategorias(false)} style={closeBtnStyle}>✕</button>
-            <h2 style={modalTitleStyle}>📂 Configurar Categorías</h2>
-            <p style={modalDescStyle}>Agrega o elimina los tipos de solicitud que verán los ciudadanos.</p>
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px'}}>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Tipos Principales (PQRSF)</h4><div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px'}}>{confListas.pqrsf.map((item, idx) => ( <span key={idx} style={{background: '#e0e7ff', color: '#1d4ed8', padding: '5px 10px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px'}}>{item} <button onClick={() => setConfListas({...confListas, pqrsf: confListas.pqrsf.filter((_, i) => i !== idx)})} style={{background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontWeight:'bold'}}>✕</button></span> ))}</div><div style={{display: 'flex', gap: '5px'}}><input type="text" value={confListas.nuevoPqrsf} onChange={e => setConfListas({...confListas, nuevoPqrsf: e.target.value})} placeholder="Nueva PQRSF..." style={{...inStyle, padding: '8px'}} /><button onClick={() => { if(confListas.nuevoPqrsf) setConfListas({...confListas, pqrsf: [...confListas.pqrsf, confListas.nuevoPqrsf], nuevoPqrsf: ''}) }} style={{background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer', fontWeight:'bold'}}>+</button></div></div>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Subcategorías (Temas)</h4><div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px', maxHeight: '150px', overflowY: 'auto'}}>{confListas.subcat.map((item, idx) => ( <span key={idx} style={{background: '#fce7f3', color: '#b91c1c', padding: '5px 10px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px'}}>{item} <button onClick={() => setConfListas({...confListas, subcat: confListas.subcat.filter((_, i) => i !== idx)})} style={{background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontWeight:'bold'}}>✕</button></span> ))}</div><div style={{display: 'flex', gap: '5px'}}><input type="text" value={confListas.nuevaSubcat} onChange={e => setConfListas({...confListas, nuevaSubcat: e.target.value})} placeholder="Nueva subcat..." style={{...inStyle, padding: '8px'}} /><button onClick={() => { if(confListas.nuevaSubcat) setConfListas({...confListas, subcat: [...confListas.subcat, confListas.nuevaSubcat], nuevaSubcat: ''}) }} style={{background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer', fontWeight:'bold'}}>+</button></div></div>
-            </div>
-            <button onClick={guardarConfigCategorias} disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Guardar Todas las Categorías'}</button>
-          </div>
-        </div>
-      )}
-
-      {mostrarModalTextos && (
-        <div style={overlayStyle}>
-          <div style={{...modalStyle, maxWidth: '800px', maxHeight: '95vh', overflowY: 'auto'}}>
-            <button onClick={()=>setMostrarModalTextos(false)} style={closeBtnStyle}>✕</button>
-            <h2 style={modalTitleStyle}>🖥️ Textos y Redes Sociales</h2>
-            <p style={modalDescStyle}>Edita la información pública que ven los ciudadanos.</p>
-            <form onSubmit={guardarConfigTextos} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>1. Título Principal (Arriba)</h4><input type="text" value={confTextos.tituloHero} onChange={e => setConfTextos({...confTextos, tituloHero: e.target.value})} placeholder="Ej. EL CAMBIO SIGUE" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descHero} onChange={e => setConfTextos({...confTextos, descHero: e.target.value})} placeholder="Descripción debajo..." style={{...inStyle, height: '60px', resize: 'none'}} required /></div>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>2. Sección Formulario de PQRSF</h4><input type="text" value={confTextos.tituloForm} onChange={e => setConfTextos({...confTextos, tituloForm: e.target.value})} placeholder="Ej. VENTANILLA CIUDADANA" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descForm} onChange={e => setConfTextos({...confTextos, descForm: e.target.value})} placeholder="Texto que invita a la gente..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>3. Sección de Logros y Gestión</h4><input type="text" value={confTextos.tituloNoticias} onChange={e => setConfTextos({...confTextos, tituloNoticias: e.target.value})} placeholder="Ej. GESTIÓN EN TERRITORIO" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descNoticias} onChange={e => setConfTextos({...confTextos, descNoticias: e.target.value})} placeholder="Texto explicativo..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>4. Textos de Redes Sociales</h4><input type="text" value={confTextos.tituloRedes} onChange={e => setConfTextos({...confTextos, tituloRedes: e.target.value})} placeholder="Ej. 📱 ¡Conéctate!" style={{...inStyle, marginBottom: '10px'}} required /><textarea value={confTextos.descRedes} onChange={e => setConfTextos({...confTextos, descRedes: e.target.value})} placeholder="Texto para invitar..." style={{...inStyle, height: '80px', resize: 'none'}} required /></div>
-              <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}><h4 style={{margin: '0 0 15px 0', color: '#003366'}}>5. Enlaces de Redes Sociales</h4><p style={{fontSize: '0.85rem', color: '#64748b', marginTop: '-10px', marginBottom: '15px'}}>Pega el link completo. Si dejas un espacio en blanco, ese botón no aparecerá.</p><div style={{display: 'grid', gap: '15px'}}><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#1877F2', display: 'flex', alignItems: 'center', gap: '5px'}}>📘 Facebook URL</label><input type="url" value={confTextos.urlFacebook} onChange={e => setConfTextos({...confTextos, urlFacebook: e.target.value})} placeholder="https://facebook.com/tu_pagina" style={{...inStyle, marginTop: '5px'}} /></div><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#E1306C', display: 'flex', alignItems: 'center', gap: '5px'}}>📸 Instagram URL</label><input type="url" value={confTextos.urlInstagram} onChange={e => setConfTextos({...confTextos, urlInstagram: e.target.value})} placeholder="https://instagram.com/tu_perfil" style={{...inStyle, marginTop: '5px'}} /></div><div><label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#000000', display: 'flex', alignItems: 'center', gap: '5px'}}>🎵 TikTok URL</label><input type="url" value={confTextos.urlTiktok} onChange={e => setConfTextos({...confTextos, urlTiktok: e.target.value})} placeholder="https://tiktok.com/@tu_usuario" style={{...inStyle, marginTop: '5px'}} /></div></div></div>
-              <button type="submit" disabled={subiendo} style={submitBtnStyle}>{subiendo ? 'Guardando...' : '💾 Guardar Textos'}</button>
             </form>
           </div>
         </div>
@@ -471,13 +611,23 @@ export default function Admin() {
 
             <div style={{marginTop: '25px', marginBottom: '25px', background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
               <h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>💬 Historial de Gestión</h4>
+              
               <div style={{ background: 'white', padding: '15px', borderRadius: '10px', border: '1px solid #cbd5e1', minHeight: '100px', maxHeight: '250px', overflowY: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem', color: '#334155', marginBottom: '15px', lineHeight: '1.5' }}>
-                {casoSeleccionado.respuesta_gestion ? casoSeleccionado.respuesta_gestion : <span style={{color: '#94a3b8', fontStyle: 'italic'}}>Aún no hay notas...</span>}
+                {casoSeleccionado.respuesta_gestion ? formatearTextoChat(casoSeleccionado.respuesta_gestion) : <span style={{color: '#94a3b8', fontStyle: 'italic'}}>Aún no hay notas...</span>}
               </div>
-              <div style={{display: 'flex', gap: '10px'}}>
-                <input type="text" placeholder="Escribe una nota..." value={respuestaActual} onChange={e => setRespuestaActual(e.target.value)} style={{flex: 1, padding: '12px 15px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem'}} />
-                <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || !respuestaActual.trim()} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '0 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: (!respuestaActual.trim() || subiendo) ? 0.6 : 1}}>➕</button>
+              
+              <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                <label style={{ cursor: 'pointer', background: archivoRespuesta ? '#dcfce7' : '#f1f5f9', padding: '10px 15px', borderRadius: '10px', border: archivoRespuesta ? '1px solid #86efac' : '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.3s' }} title="Adjuntar documento o foto">
+                   <span style={{ fontSize: '1.2rem' }}>📎</span>
+                   <input type="file" style={{ display: 'none' }} onChange={e => setArchivoRespuesta(e.target.files[0])} />
+                </label>
+                
+                <input type="text" placeholder="Escribe una nota o solución..." value={respuestaActual} onChange={e => setRespuestaActual(e.target.value)} style={{flex: 1, padding: '12px 15px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem'}} />
+                
+                <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || (!respuestaActual.trim() && !archivoRespuesta)} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '0 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: ((!respuestaActual.trim() && !archivoRespuesta) || subiendo) ? 0.6 : 1}}>➕ Guardar</button>
               </div>
+              {archivoRespuesta && <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '8px', fontWeight: 'bold', paddingLeft: '5px' }}>✓ Archivo listo: {archivoRespuesta.name}</div>}
+
             </div>
 
             <div style={{background: '#f1f5f9', padding: '25px', borderRadius: '15px'}}>
