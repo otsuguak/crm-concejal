@@ -9,7 +9,6 @@ export default function Inicio() {
 
   const [config, setConfig] = useState({
     listaPQRSF: [], listaSubcategorias: [],
-    // 🔥 ESTADO DE IDENTIDAD ACTUALIZADO 🔥
     identidad: { logo: '', texto: 'CONCEJAL #5 Mosquera', fondoHero: '' },
     textos: { 
       tituloHero: 'EL CAMBIO SIGUE', descHero: 'Gestión real, resultados para la gente. Vota Cambio Radical #5', 
@@ -48,7 +47,6 @@ export default function Inicio() {
       if (dataConfig && !errorConfig) {
         setConfig({
           listaPQRSF: dataConfig.lista_pqrsf || [], listaSubcategorias: dataConfig.lista_subcategorias || [],
-          // 🔥 CARGAMOS NUEVA IDENTIDAD 🔥
           identidad: { 
             logo: dataConfig.logo_url || '', 
             texto: dataConfig.navbar_texto || 'CONCEJAL #5 Mosquera', 
@@ -199,10 +197,8 @@ export default function Inicio() {
         }
       `}</style>
 
-      {/* NAVBAR */}
       <nav className="nav-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 5%', backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 1000 }}>
         
-        {/* 🔥 IDENTIDAD VISUAL DINÁMICA (LOGO + TEXTO) 🔥 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {config.identidad.logo ? (
             <img src={config.identidad.logo} alt="Logo Oficial" style={{ height: '35px', maxWidth: '120px', objectFit: 'contain', borderRadius: '5px' }} />
@@ -222,7 +218,6 @@ export default function Inicio() {
         </div>
       </nav>
 
-      {/* MENÚ MÓVIL */}
       {menuMovilAbierto && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)', animation: 'fadeIn 0.3s ease-in-out' }}>
           <button onClick={() => setMenuMovilAbierto(false)} style={{ position: 'absolute', top: '25px', right: '25px', border: 'none', background: '#f1f5f9', width: '50px', height: '50px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 'bold', color: '#003366' }}>✕</button>
@@ -237,16 +232,16 @@ export default function Inicio() {
         </div>
       )}
 
-      {/* 🔥 HERO SECTION CON FONDO MIMETIZADO 🔥 */}
-      <header className="hero-header" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#001a33' }}>
+      {/* 🔥 HERO SECTION CORREGIDO (FONDO MÁS VISIBLE) 🔥 */}
+      <header className="hero-header" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#002244' }}>
         
-        {/* Capa de la imagen de fondo: Se mimetiza con baja opacidad */}
+        {/* Capa de la imagen de fondo: Le subí la opacidad de 0.15 a 0.45 y quité el mixBlendMode para que se note */}
         {config.identidad.fondoHero && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.15, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center', mixBlendMode: 'screen' }}></div>
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.45, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
         )}
         
-        {/* Gradiente corporativo oscuro que protege la lectura del texto */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,51,102,0.9) 0%, rgba(0,26,51,0.95) 100%)', zIndex: 1 }}></div>
+        {/* Gradiente corporativo oscuro MÁS TRANSPARENTE (0.6 a 0.8 en vez de 0.9 a 0.95) */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,34,68,0.6) 0%, rgba(0,15,30,0.8) 100%)', zIndex: 1 }}></div>
 
         {/* Textos y contenido */}
         <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none', zIndex: 2 }}>5</div>
