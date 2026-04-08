@@ -396,7 +396,7 @@ export default function Inicio() {
               <p>En cumplimiento de la Ley 1581 de 2012 (Ley de Protección de Datos Personales) y sus decretos reglamentarios, le informamos que los datos personales suministrados a través de este portal serán tratados de manera confidencial y segura.</p>
               <p><strong>Finalidad:</strong> Sus datos serán utilizados exclusivamente para: 1. Dar trámite, gestión y respuesta a su Petición, Queja, Reclamo, Sugerencia o Felicitación (PQRSF). 2. Mantener contacto con usted sobre el estado de su solicitud. 3. (Solo si usted lo autoriza explícitamente) Enviarle información sobre la gestión territorial del Concejal.</p>
               <p><strong>Derechos:</strong> Como titular de los datos, usted tiene derecho a conocer, actualizar, rectificar y solicitar la supresión de sus datos personales en cualquier momento.</p>
-              <p><strong>Derechos:</strong> La infraestructura tecnológica, código fuente y diseño de esta plataforma son propiedad intelectual de LumenGroup S.A.S., operando bajo licencia de uso para la presente administración. </p>
+              <p><strong>Propiedad:</strong> La infraestructura tecnológica, código fuente y diseño de esta plataforma son propiedad intelectual de LumenGroup S.A.S., operando bajo licencia de uso para la presente administración. </p>
             </div>
             <button onClick={() => setMostrarModalHabeas(false)} style={{ width: '100%', padding: '15px', backgroundColor: '#E30613', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', marginTop: '20px' }}>Cerrar y Volver</button>
           </div>
