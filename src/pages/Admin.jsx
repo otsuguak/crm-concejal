@@ -648,7 +648,7 @@ export default function Admin() {
             <h2 style={modalTitleStyle}>📂 Configurar Categorías</h2>
             <p style={modalDescStyle}>Agrega o elimina los tipos de solicitud. ¡Al agregar aquí, se conectan directo con los tiempos SLA!</p>
             
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px'}}>
+            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px'}}>
               <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0'}}>
                 <h4 style={{margin: '0 0 10px 0', color: '#0f172a'}}>Tipos Principales (PQRSF / SLA)</h4>
                 <div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px'}}>
@@ -849,15 +849,19 @@ export default function Admin() {
                 {casoSeleccionado.respuesta_gestion ? formatearTextoChat(casoSeleccionado.respuesta_gestion) : <span style={{color: '#94a3b8', fontStyle: 'italic'}}>Aún no hay notas...</span>}
               </div>
               
-              <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-                <label style={{ cursor: 'pointer', background: archivoRespuesta ? '#dcfce7' : '#f1f5f9', padding: '10px 15px', borderRadius: '10px', border: archivoRespuesta ? '1px solid #86efac' : '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.3s' }} title="Adjuntar documento o foto">
-                   <span style={{ fontSize: '1.2rem' }}>📎</span>
-                   <input type="file" style={{ display: 'none' }} onChange={e => setArchivoRespuesta(e.target.files[0])} />
-                </label>
+              {/* Barra de Chat Responsiva */}
+              <div style={{display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
                 
-                <input type="text" placeholder="Escribe una nota o solución..." value={respuestaActual} onChange={e => setRespuestaActual(e.target.value)} style={{flex: 1, padding: '12px 15px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem'}} />
+                <input type="text" placeholder="Escribe una nota o solución..." value={respuestaActual} onChange={e => setRespuestaActual(e.target.value)} style={{flex: '1 1 200px', padding: '12px 15px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem'}} />
                 
-                <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || (!respuestaActual.trim() && !archivoRespuesta)} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '0 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: ((!respuestaActual.trim() && !archivoRespuesta) || subiendo) ? 0.6 : 1}}>➕ Guardar</button>
+                <div style={{display: 'flex', gap: '10px', flex: '1 0 auto', justifyContent: 'flex-end'}}>
+                  <label style={{ cursor: 'pointer', background: archivoRespuesta ? '#dcfce7' : '#f1f5f9', padding: '10px 15px', borderRadius: '10px', border: archivoRespuesta ? '1px solid #86efac' : '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.3s' }} title="Adjuntar documento o foto">
+                     <span style={{ fontSize: '1.2rem' }}>📎</span>
+                     <input type="file" style={{ display: 'none' }} onChange={e => setArchivoRespuesta(e.target.files[0])} />
+                  </label>
+                  
+                  <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || (!respuestaActual.trim() && !archivoRespuesta)} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: ((!respuestaActual.trim() && !archivoRespuesta) || subiendo) ? 0.6 : 1}}>➕ Guardar</button>
+                </div>
               </div>
               {archivoRespuesta && <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '8px', fontWeight: 'bold', paddingLeft: '5px' }}>✓ Archivo listo: {archivoRespuesta.name}</div>}
 
