@@ -396,6 +396,7 @@ export default function Inicio() {
               <p>En cumplimiento de la Ley 1581 de 2012 (Ley de Protección de Datos Personales) y sus decretos reglamentarios, le informamos que los datos personales suministrados a través de este portal serán tratados de manera confidencial y segura.</p>
               <p><strong>Finalidad:</strong> Sus datos serán utilizados exclusivamente para: 1. Dar trámite, gestión y respuesta a su Petición, Queja, Reclamo, Sugerencia o Felicitación (PQRSF). 2. Mantener contacto con usted sobre el estado de su solicitud. 3. (Solo si usted lo autoriza explícitamente) Enviarle información sobre la gestión territorial del Concejal.</p>
               <p><strong>Derechos:</strong> Como titular de los datos, usted tiene derecho a conocer, actualizar, rectificar y solicitar la supresión de sus datos personales en cualquier momento.</p>
+              <p><strong>Derechos:</strong> La infraestructura tecnológica, código fuente y diseño de esta plataforma son propiedad intelectual de LumenGroup S.A.S., operando bajo licencia de uso para la presente administración. </p>
             </div>
             <button onClick={() => setMostrarModalHabeas(false)} style={{ width: '100%', padding: '15px', backgroundColor: '#E30613', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', marginTop: '20px' }}>Cerrar y Volver</button>
           </div>
@@ -477,7 +478,7 @@ export default function Inicio() {
               <div style={{ textAlign: 'center' }}><span style={{ fontWeight: 'bold', color: '#E30613', display: 'block', marginBottom: '15px' }}>🔴 REGISTRO: EL ANTES</span><img src={noticiaSeleccionada.imagen_1_antes} onClick={() => setFotoBioExpandida(noticiaSeleccionada.imagen_1_antes)} className="zoom-img" style={{ width: '100%', borderRadius: '20px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', border: '4px solid white' }} /></div>
               <div style={{ textAlign: 'center' }}><span style={{ fontWeight: 'bold', color: '#28a745', display: 'block', marginBottom: '15px' }}>🟢 GESTIÓN: EL DESPUÉS</span><img src={noticiaSeleccionada.imagen_1_despues} onClick={() => setFotoBioExpandida(noticiaSeleccionada.imagen_1_despues)} className="zoom-img" style={{ width: '100%', borderRadius: '20px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', border: '4px solid white' }} /></div>
             </div>
-            <footer style={{ marginTop: '60px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '30px', color: '#003366', fontWeight: 'bold' }}>CAMBIO RADICAL #5 - HECHOS PARA EL CAMBIO</footer>
+            <footer style={{ marginTop: '60px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '30px', color: '#003366', fontWeight: 'bold' }}>CAMBIO RADICAL #5 - HECHOS PARA EL CAMBIO </footer>
           </div>
         </div>
       )}
@@ -485,6 +486,7 @@ export default function Inicio() {
       <footer style={{ backgroundColor: '#001a33', color: 'white', padding: '60px 5%', textAlign: 'center' }}>
         <p style={{ fontWeight: '900', fontSize: '1.5rem', marginBottom: '10px' }}>CAMBIO RADICAL #5</p>
         <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Publicidad política pagada. Mosquera, Cundinamarca © 2026</p>
+        <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Diseño y Desarrollo Tecnológico por LumenGroup S.A.S. © 2026 V.1.0.0</p>
       </footer>
     </div>
   );
