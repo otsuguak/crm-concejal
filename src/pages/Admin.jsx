@@ -358,10 +358,10 @@ export default function Admin() {
       if (error) throw error; 
 
       const datosEmailEscalado = {
-        service_id: 'TU_SERVICE_ID',
-        template_id: 'TU_TEMPLATE_ESCALADO',
-        user_id: 'TU_PUBLIC_KEY',
-        template_params: { correo_ciudadano: casoSeleccionado.ciudadano_correo, nombre_ciudadano: casoSeleccionado.ciudadano_nombre, numero_radicado: idCaso }
+        service_id: 'service_omhcwuf',
+        template_id: 'template_a8hy01e',
+        user_id: 'EJwAep9er9Fhi3d1W',
+        template_params: { correo_destino: correoDelFuncionario, nombre_ciudadano: casoSeleccionado.ciudadano_nombre, numero_radicado: idCaso }
       };
       fetch('https://api.emailjs.com/api/v1.0/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosEmailEscalado) }).catch(err => console.log(err));
 
@@ -385,9 +385,9 @@ export default function Admin() {
         if (error) throw error; 
 
         const datosEmailCierre = {
-          service_id: 'TU_SERVICE_ID',
-          template_id: 'TU_TEMPLATE_CIERRE',
-          user_id: 'TU_PUBLIC_KEY',
+          service_id: 'service_omhcwuf',
+          template_id: 'template_ap7el9i',
+          user_id: 'EJwAep9er9Fhi3d1W',
           template_params: { correo_ciudadano: casoSeleccionado.ciudadano_correo, nombre_ciudadano: casoSeleccionado.ciudadano_nombre, numero_radicado: idCaso, ultima_respuesta: ultimaNotaExtraida }
         };
         fetch('https://api.emailjs.com/api/v1.0/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosEmailCierre) }).catch(err => console.log(err));

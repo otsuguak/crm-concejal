@@ -109,9 +109,9 @@ export default function Inicio() {
       // 📧 DISPARADOR DE EMAILJS (API INVISIBLE) 📧
       // ====================================================================
       const datosEmail = {
-        service_id: 'TU_SERVICE_ID',           // REEMPLAZA ESTO
-        template_id: 'TU_TEMPLATE_CREACION',   // REEMPLAZA ESTO
-        user_id: 'TU_PUBLIC_KEY',              // REEMPLAZA ESTO
+        service_id: 'service_omhcwuf',           // REEMPLAZA ESTO
+        template_id: 'template_x1juode',   // REEMPLAZA ESTO
+        user_id: 'EJwAep9er9Fhi3d1W',              // REEMPLAZA ESTO
         template_params: {
           correo_ciudadano: correo,
           nombre_ciudadano: nombre,
