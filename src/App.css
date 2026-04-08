@@ -329,3 +329,61 @@
     padding: 0 !important;
   }
 }
+
+/* =========================================
+   NUEVO MENÚ HAMBURGUESA Y TABLA MÓVIL
+   ========================================= */
+
+/* Estilo del botón (Solo se verá en celulares) */
+.btn-hamburguesa {
+  display: none; 
+  align-items: center;
+  gap: 10px;
+  background: #0f172a;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 20px;
+  width: max-content;
+}
+
+@media (max-width: 768px) {
+  /* Hacemos que el botón aparezca */
+  .btn-hamburguesa {
+    display: flex !important;
+  }
+  
+  /* El menú se esconde fuera de la pantalla por la izquierda */
+  .admin-sidebar {
+    position: fixed;
+    left: -100%; 
+    top: 0;
+    bottom: 0;
+    z-index: 2000;
+    transition: left 0.3s ease;
+    width: 280px !important;
+  }
+  
+  /* Clase que le pondremos cuando toquen el botón */
+  .admin-sidebar.abierto {
+    left: 0; 
+  }
+  
+  /* Fondo oscuro cuando el menú está abierto */
+  .fondo-oscuro-menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1999;
+  }
+
+  /* Ocultar columnas menos críticas de la tabla en celular */
+  .ocultar-movil {
+    display: none !important;
+  }
+}

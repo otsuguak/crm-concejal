@@ -63,6 +63,8 @@ export default function Admin() {
   const [subiendo, setSubiendo] = useState(false);
   const navigate = useNavigate();
 
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
   const esCasoNuevo = (estado) => {
     if (!estado) return true; 
     const estLimpio = estado.toLowerCase().trim();
@@ -479,7 +481,10 @@ export default function Admin() {
       {toastMsg && ( <div className="toast-exito" style={{ zIndex: 99999 }}>✅ {toastMsg}</div> )}
       {subiendo && ( <div className="cr5-loader-overlay" style={{zIndex: 9999}}><div className="cr5-loader-container"><div className="cr5-aro-azul"></div><div className="cr5-logo-centro">5</div></div><p className="cr5-loader-texto">PROCESANDO...</p></div> )}
 
-      <aside className="admin-sidebar" style={{overflowY: 'auto'}}>
+     {menuAbierto && <div className="fondo-oscuro-menu" onClick={() => setMenuAbierto(false)}></div>}
+
+      {/* SE LE AGREGA LA CLASE DINÁMICA 'abierto' AL ASIDE */}
+      <aside className={`admin-sidebar ${menuAbierto ? 'abierto' : ''}`} style={{overflowY: 'auto'}}>
         <div style={{padding: '40px 20px', textAlign: 'center'}}>
            {confTextos.logoUrlActual ? (
              <img src={confTextos.logoUrlActual} style={{maxHeight:'60px', borderRadius:'10px', boxShadow:'0 10px 20px rgba(0,0,0,0.1)'}} />
@@ -513,6 +518,11 @@ export default function Admin() {
       </aside>
 
       <main className="admin-main">
+        {/* BOTÓN HAMBURGUESA (Solo visible en móvil) */}
+        <button className="btn-hamburguesa" onClick={() => setMenuAbierto(true)}>
+          ☰ Menú Administrador
+        </button>
+
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '15px'}}>
           <div><h1 style={{margin:0, color:'#0f172a', fontSize:'1.8rem'}}>Panel de Control</h1><p style={{margin:'5px 0 0 0', color:'#64748b'}}>{perfil.rol === 'admin' ? 'Resumen en tiempo real.' : 'Tus casos asignados.'}</p></div>
           {perfil.rol === 'admin' && (
@@ -545,15 +555,32 @@ export default function Admin() {
           </div>
 
           <table className="admin-table">
-            <thead><tr><th># Radicado</th><th>Ciudadano</th><th>Asunto</th><th>Estado</th>{perfil.rol === 'admin' && <th>Responsable</th>}<th>Vencimiento</th><th>Acción</th></tr></thead>
+            <thead>
+              <tr>
+                <th># Radicado</th>
+                <th>Ciudadano</th>
+                <th className="ocultar-movil">Asunto</th>
+                <th>Estado</th>
+                {perfil.rol === 'admin' && <th className="ocultar-movil">Responsable</th>}
+                <th className="ocultar-movil">Vencimiento</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
             <tbody>
               {casosFiltrados.map(c => (
                 <tr key={c.id} className={calcularColorEstado(c.fecha_limite, c.estado)}>
                   <td><strong style={{color: '#0f172a', background: '#e2e8f0', padding: '4px 8px', borderRadius: '6px'}}>#{c.id}</strong></td>
-                  <td><b>{c.ciudadano_nombre}</b></td><td>{c.tipos_solicitud?.nombre}</td><td><span style={badgeStyle(c.estado)}>{c.estado || 'ABIERTO'}</span></td>
-                  {perfil.rol === 'admin' && ( <td>{colaboradores.find(col => col.id === c.colaborador_id)?.nombre || <span style={{color:'#94a3b8', fontStyle:'italic'}}>Sin asignar</span>}</td> )}
-                  <td>{c.fecha_limite ? new Date(c.fecha_limite).toLocaleDateString() : 'Sin fecha'}</td>
-                  <td><button className="btn-gestionar-pro" onClick={() => { setCasoSeleccionado(c); setColaboradorAsignado(c.colaborador_id || ''); setRespuestaActual(''); setArchivoRespuesta(null); }}>Gestionar</button></td>
+                  <td><b>{c.ciudadano_nombre}</b></td>
+                  
+                  <td className="ocultar-movil">{c.tipos_solicitud?.nombre}</td>
+                  
+                  <td><span style={badgeStyle(c.estado)}>{c.estado || 'ABIERTO'}</span></td>
+                  
+                  {perfil.rol === 'admin' && ( <td className="ocultar-movil">{colaboradores.find(col => col.id === c.colaborador_id)?.nombre || <span style={{color:'#94a3b8', fontStyle:'italic'}}>Sin asignar</span>}</td> )}
+                  
+                  <td className="ocultar-movil">{c.fecha_limite ? new Date(c.fecha_limite).toLocaleDateString() : 'Sin fecha'}</td>
+                  
+                  <td><button className="btn-gestionar-pro" onClick={() => { setCasoSeleccionado(c); setColaboradorAsignado(c.colaborador_id || ''); setRespuestaActual(''); setArchivoRespuesta(null); setMenuAbierto(false); }}>Gestionar</button></td>
                 </tr>
               ))}
               {casosFiltrados.length === 0 && (<tr><td colSpan={perfil.rol === 'admin' ? "7" : "6"} style={{textAlign:'center', color:'#94a3b8', padding:'3rem', fontSize: '1.1rem'}}>No se encontraron radicados. 🧐</td></tr>)}
