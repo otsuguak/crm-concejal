@@ -357,6 +357,10 @@ export default function Admin() {
       const { error } = await supabase.from('casos').update({ estado: 'Escalado', colaborador_id: colaboradorAsignado }).eq('id', idCaso); 
       if (error) throw error; 
 
+      const funcionario = perfiles.find(p => p.id === colaboradorAsignado);
+      // Si lo encuentra, guarda el correo; si no, pone un aviso
+      const correoDelFuncionario = funcionario ? funcionario.correo : '';
+
       const datosEmailEscalado = {
         service_id: 'service_omhcwuf',
         template_id: 'template_a8hy01e',
