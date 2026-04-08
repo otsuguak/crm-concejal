@@ -273,9 +273,26 @@ export default function Inicio() {
               <h2 className="title-responsive" style={{ fontSize: '2.5rem', fontWeight: '900', margin: '0 0 15px 0', color: 'white', lineHeight: '1.2' }}>{config.textos.tituloRedes}</h2>
               <p style={{ fontSize: '1.15rem', color: '#cbd5e1', margin: '0 auto 40px auto', maxWidth: '650px', lineHeight: '1.6' }}>{config.textos.descRedes}</p>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
-                {config.redes.facebook && <a href={config.redes.facebook} target="_blank" rel="noopener noreferrer" className="btn-social fb">📘 Facebook</a>}
-                {config.redes.instagram && <a href={config.redes.instagram} target="_blank" rel="noopener noreferrer" className="btn-social ig">📸 Instagram</a>}
-                {config.redes.tiktok && <a href={config.redes.tiktok} target="_blank" rel="noopener noreferrer" className="btn-social tk">🎵 TikTok</a>}
+                {config.redes.facebook && (
+                   <a href={config.redes.facebook} target="_blank" rel="noopener noreferrer" className="btn-social fb" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook" style={{ width: '24px', height: '24px' }} />
+                  Facebook
+                  </a>
+                )}
+
+                {config.redes.instagram && (
+                    <a href={config.redes.instagram} target="_blank" rel="noopener noreferrer" className="btn-social ig" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" alt="Instagram" style={{ width: '24px', height: '24px' }} />
+                  Instagram
+                  </a>
+                )}
+
+                {config.redes.tiktok && (
+                    <a href={config.redes.tiktok} target="_blank" rel="noopener noreferrer" className="btn-social tk" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <img src="https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg" alt="TikTok" style={{ width: '24px', height: '24px' }} />
+                    TikTok
+                    </a>
+                )}
               </div>
             </div>
           </section>

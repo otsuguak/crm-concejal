@@ -132,6 +132,28 @@ export default function Admin() {
 
   const mostrarExito = (mensaje) => { setToastMsg(mensaje); setTimeout(() => { setToastMsg(''); }, 3000); };
   
+  // =======================================================================
+  // 🔥 LÓGICA DEL CAMIÓN DE BASURA: SUBIR Y BORRAR DE STORAGE 🔥
+  // =======================================================================
+  
+  // Extrae solo el nombre final del archivo de una URL pública
+  const extraerNombreArchivo = (url) => {
+    if (!url) return null;
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/');
+      return decodeURIComponent(pathParts[pathParts.length - 1]);
+    } catch (error) { return null; }
+  };
+
+  // Va al Storage y destruye el archivo viejo
+  const borrarArchivoDeStorage = async (urlVieja, bucket) => {
+    const nombreArchivo = extraerNombreArchivo(urlVieja);
+    if (nombreArchivo) {
+      await supabase.storage.from(bucket).remove([nombreArchivo]);
+    }
+  };
+
   const subirArchivo = async (file, bucket) => { 
     if (!file) return null; 
     const name = `${Date.now()}-${file.name.replace(/\s/g, '_')}`; 
@@ -146,8 +168,19 @@ export default function Admin() {
     e.preventDefault(); 
     setSubiendo(true); 
     try { 
-      const urlLogoFinal = archivoLogo ? await subirArchivo(archivoLogo, 'noticias') : confTextos.logoUrlActual;
-      const urlFondoFinal = archivoHeroFondo ? await subirArchivo(archivoHeroFondo, 'noticias') : confTextos.heroFondoActual;
+      let urlLogoFinal = confTextos.logoUrlActual;
+      if (archivoLogo) {
+        // 🔥 Si sube logo nuevo, destruimos el viejo de la nube 🔥
+        if (confTextos.logoUrlActual) await borrarArchivoDeStorage(confTextos.logoUrlActual, 'noticias');
+        urlLogoFinal = await subirArchivo(archivoLogo, 'noticias');
+      }
+
+      let urlFondoFinal = confTextos.heroFondoActual;
+      if (archivoHeroFondo) {
+        // 🔥 Si sube fondo nuevo, destruimos el viejo de la nube 🔥
+        if (confTextos.heroFondoActual) await borrarArchivoDeStorage(confTextos.heroFondoActual, 'noticias');
+        urlFondoFinal = await subirArchivo(archivoHeroFondo, 'noticias');
+      }
 
       const { error } = await supabase.from('configuracion').update({ 
         navbar_texto: confTextos.navbarTexto, logo_url: urlLogoFinal, hero_fondo_url: urlFondoFinal,
@@ -199,8 +232,19 @@ export default function Admin() {
     e.preventDefault();
     setSubiendo(true);
     try {
-      const urlFoto1 = archivoBio1 ? await subirArchivo(archivoBio1, 'noticias') : confBio.foto1Actual;
-      const urlFoto2 = archivoBio2 ? await subirArchivo(archivoBio2, 'noticias') : confBio.foto2Actual;
+      let urlFoto1 = confBio.foto1Actual;
+      if (archivoBio1) {
+        // 🔥 Si sube foto nueva, destruye la vieja 🔥
+        if (confBio.foto1Actual) await borrarArchivoDeStorage(confBio.foto1Actual, 'noticias');
+        urlFoto1 = await subirArchivo(archivoBio1, 'noticias');
+      }
+
+      let urlFoto2 = confBio.foto2Actual;
+      if (archivoBio2) {
+        // 🔥 Si sube foto nueva, destruye la vieja 🔥
+        if (confBio.foto2Actual) await borrarArchivoDeStorage(confBio.foto2Actual, 'noticias');
+        urlFoto2 = await subirArchivo(archivoBio2, 'noticias');
+      }
 
       const { error } = await supabase.from('configuracion').update({
         bio_titulo: confBio.titulo, bio_descripcion: confBio.descripcion, bio_video_url: confBio.videoUrl,
@@ -217,8 +261,61 @@ export default function Admin() {
   const abrirParaCrear = () => { setIdEdicion(null); setTitulo(''); setDescripcion(''); setVideoUrl(''); setArchivoAntes(null); setArchivoDespues(null); setMostrarModalFormNoticia(true); };
   const abrirParaEditar = (n) => { setIdEdicion(n.id); setTitulo(n.titulo); setDescripcion(n.descripcion); setVideoUrl(n.video_url || ''); setMostrarModalFormNoticia(true); };
   
-  const guardarNoticia = async (e) => { e.preventDefault(); setSubiendo(true); try { const urlA = archivoAntes ? await subirArchivo(archivoAntes, 'noticias') : null; const urlD = archivoDespues ? await subirArchivo(archivoDespues, 'noticias') : null; const datos = { titulo, descripcion, video_url: videoUrl }; if (urlA) datos.imagen_1_antes = urlA; if (urlD) datos.imagen_1_despues = urlD; if (idEdicion) { await supabase.from('noticias').update(datos).eq('id', idEdicion); mostrarExito("¡Logro actualizado!"); } else { if (!archivoAntes || !archivoDespues) throw new Error("Las fotos Antes/Después son obligatorias."); datos.imagen_1_antes = urlA; datos.imagen_1_despues = urlD; await supabase.from('noticias').insert([datos]); mostrarExito("¡Nueva gestión publicada!"); } setMostrarModalFormNoticia(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
-  const eliminarNoticia = async (noticia) => { if (window.confirm("¿Estás seguro de borrar este logro?")) { setSubiendo(true); try { const extraerNombre = (url) => { if (!url) return null; try { const urlObj = new URL(url); const pathParts = urlObj.pathname.split('/'); return decodeURIComponent(pathParts[pathParts.length - 1]); } catch (error) { return null; } }; const imgA = extraerNombre(noticia.imagen_1_antes); const imgD = extraerNombre(noticia.imagen_1_despues); const archivosABorrar = [imgA, imgD].filter(Boolean); if (archivosABorrar.length > 0) { await supabase.storage.from('noticias').remove(archivosABorrar); } await supabase.from('noticias').delete().eq('id', noticia.id); mostrarExito("¡Logro eliminado!"); cargarTodo(); } catch (error) { alert("Error al borrar: " + error.message); } setSubiendo(false); } };
+  const guardarNoticia = async (e) => { 
+    e.preventDefault(); 
+    setSubiendo(true); 
+    try { 
+      const noticiaVieja = idEdicion ? noticiasListado.find(n => n.id === idEdicion) : null;
+      
+      let urlA = null;
+      if (archivoAntes) {
+        // 🔥 Si sube foto nueva en edición, destruye la vieja 🔥
+        if (noticiaVieja && noticiaVieja.imagen_1_antes) await borrarArchivoDeStorage(noticiaVieja.imagen_1_antes, 'noticias');
+        urlA = await subirArchivo(archivoAntes, 'noticias');
+      }
+
+      let urlD = null;
+      if (archivoDespues) {
+        // 🔥 Si sube foto nueva en edición, destruye la vieja 🔥
+        if (noticiaVieja && noticiaVieja.imagen_1_despues) await borrarArchivoDeStorage(noticiaVieja.imagen_1_despues, 'noticias');
+        urlD = await subirArchivo(archivoDespues, 'noticias');
+      }
+
+      const datos = { titulo, descripcion, video_url: videoUrl }; 
+      if (urlA) datos.imagen_1_antes = urlA; 
+      if (urlD) datos.imagen_1_despues = urlD; 
+      
+      if (idEdicion) { 
+        await supabase.from('noticias').update(datos).eq('id', idEdicion); 
+        mostrarExito("¡Logro actualizado!"); 
+      } else { 
+        if (!archivoAntes || !archivoDespues) throw new Error("Las fotos Antes/Después son obligatorias."); 
+        datos.imagen_1_antes = urlA; 
+        datos.imagen_1_despues = urlD; 
+        await supabase.from('noticias').insert([datos]); 
+        mostrarExito("¡Nueva gestión publicada!"); 
+      } 
+      setMostrarModalFormNoticia(false); setArchivoAntes(null); setArchivoDespues(null); cargarTodo(); 
+    } catch (err) { alert("Error: " + err.message); } 
+    setSubiendo(false); 
+  };
+
+  const eliminarNoticia = async (noticia) => { 
+    if (window.confirm("¿Estás seguro de borrar este logro?")) { 
+      setSubiendo(true); 
+      try { 
+        // 🔥 Usa el camión de basura para borrar ambas fotos cuando eliminas el registro 🔥
+        await borrarArchivoDeStorage(noticia.imagen_1_antes, 'noticias');
+        await borrarArchivoDeStorage(noticia.imagen_1_despues, 'noticias');
+
+        await supabase.from('noticias').delete().eq('id', noticia.id); 
+        mostrarExito("¡Logro eliminado y fotos borradas del Storage!"); 
+        cargarTodo(); 
+      } catch (error) { alert("Error al borrar: " + error.message); } 
+      setSubiendo(false); 
+    } 
+  };
+
   const toggleVisibilidad = async (noticia) => { setSubiendo(true); try { const nuevoEstado = !noticia.visible; await supabase.from('noticias').update({ visible: nuevoEstado }).eq('id', noticia.id); cargarTodo(); } catch (error) { alert("Error al cambiar estado: " + error.message); } setSubiendo(false); };
   const actualizarDiasSLA = async (idTipo, nuevosDias) => { setSubiendo(true); try { await supabase.from('tipos_solicitud').update({ dias_respuesta: parseInt(nuevosDias) || 0 }).eq('id', idTipo); await cargarTodo(); mostrarExito("¡Tiempo actualizado!"); } catch (error) { alert("Error: " + error.message); } setSubiendo(false); };
 
@@ -253,7 +350,6 @@ export default function Admin() {
     setSubiendo(false); 
   };
 
-  // 🔥 ESCALAMIENTO CON CORREO AUTOMÁTICO 🔥
   const asignarCaso = async (idCaso) => { 
     if (!colaboradorAsignado) { alert("⚠️ Selecciona un asesor."); return; } 
     setSubiendo(true); 
@@ -261,19 +357,13 @@ export default function Admin() {
       const { error } = await supabase.from('casos').update({ estado: 'Escalado', colaborador_id: colaboradorAsignado }).eq('id', idCaso); 
       if (error) throw error; 
 
-      // 📧 DISPARADOR EMAILJS (ESCALAMIENTO) 📧
       const datosEmailEscalado = {
-        service_id: 'TU_SERVICE_ID',              // REEMPLAZA ESTO
-        template_id: 'TU_TEMPLATE_ESCALADO',      // REEMPLAZA ESTO
-        user_id: 'TU_PUBLIC_KEY',                 // REEMPLAZA ESTO
-        template_params: {
-          correo_ciudadano: casoSeleccionado.ciudadano_correo,
-          nombre_ciudadano: casoSeleccionado.ciudadano_nombre,
-          numero_radicado: idCaso
-        }
+        service_id: 'TU_SERVICE_ID',
+        template_id: 'TU_TEMPLATE_ESCALADO',
+        user_id: 'TU_PUBLIC_KEY',
+        template_params: { correo_ciudadano: casoSeleccionado.ciudadano_correo, nombre_ciudadano: casoSeleccionado.ciudadano_nombre, numero_radicado: idCaso }
       };
       fetch('https://api.emailjs.com/api/v1.0/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosEmailEscalado) }).catch(err => console.log(err));
-      // =======================================
 
       mostrarExito("¡Caso escalado y correo enviado!"); 
       setCasoSeleccionado(null); cargarTodo(); 
@@ -281,36 +371,26 @@ export default function Admin() {
     setSubiendo(false); 
   };
 
-  // 🔥 SOLUCIONADO (CIERRE) CON CORREO DE LA ÚLTIMA NOTA 🔥
   const solucionarCaso = async (idCaso) => { 
     if (window.confirm("¿Confirmas que este caso ya fue gestionado?")) { 
       setSubiendo(true); 
       try { 
-        
-        // 1. Extraer quirurgicamente SÓLO la última nota del historial
         let ultimaNotaExtraida = 'Tu caso ha sido gestionado con éxito por nuestro equipo.';
         if (casoSeleccionado.respuesta_gestion) {
           const arrayNotas = casoSeleccionado.respuesta_gestion.split('\n\n=========================\n\n');
-          ultimaNotaExtraida = arrayNotas[arrayNotas.length - 1]; // Toma el ultimo elemento del arreglo
+          ultimaNotaExtraida = arrayNotas[arrayNotas.length - 1]; 
         }
 
         const { error } = await supabase.from('casos').update({ estado: 'Solucionado' }).eq('id', idCaso); 
         if (error) throw error; 
 
-        // 📧 DISPARADOR EMAILJS (CIERRE DE CASO) 📧
         const datosEmailCierre = {
-          service_id: 'TU_SERVICE_ID',              // REEMPLAZA ESTO
-          template_id: 'TU_TEMPLATE_CIERRE',        // REEMPLAZA ESTO
-          user_id: 'TU_PUBLIC_KEY',                 // REEMPLAZA ESTO
-          template_params: {
-            correo_ciudadano: casoSeleccionado.ciudadano_correo,
-            nombre_ciudadano: casoSeleccionado.ciudadano_nombre,
-            numero_radicado: idCaso,
-            ultima_respuesta: ultimaNotaExtraida
-          }
+          service_id: 'TU_SERVICE_ID',
+          template_id: 'TU_TEMPLATE_CIERRE',
+          user_id: 'TU_PUBLIC_KEY',
+          template_params: { correo_ciudadano: casoSeleccionado.ciudadano_correo, nombre_ciudadano: casoSeleccionado.ciudadano_nombre, numero_radicado: idCaso, ultima_respuesta: ultimaNotaExtraida }
         };
         fetch('https://api.emailjs.com/api/v1.0/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosEmailCierre) }).catch(err => console.log(err));
-        // =======================================
 
         mostrarExito("¡Caso solucionado y correo enviado!"); 
         setCasoSeleccionado(null); cargarTodo(); 
