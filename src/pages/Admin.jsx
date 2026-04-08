@@ -354,13 +354,27 @@ export default function Admin() {
     if (!colaboradorAsignado) { alert("⚠️ Selecciona un asesor."); return; } 
     setSubiendo(true); 
     try { 
-      const { error } = await supabase.from('casos').update({ estado: 'Escalado', colaborador_id: colaboradorAsignado }).eq('id', idCaso); 
-      if (error) throw error; 
+        const { error: updateError } = await supabase
+        .from('casos')
+        .update({ estado: 'Escalado', colaborador_id: colaboradorAsignado })
+        .eq('id', idCaso); 
 
-      const funcionario = perfiles.find(p => p.id === colaboradorAsignado);
-      // Si lo encuentra, guarda el correo; si no, pone un aviso
-      const correoDelFuncionario = funcionario ? funcionario.correo : '';
+        if (updateError) throw updateError; 
 
+        // 2. BUSCAMOS EL CORREO DEL COLABORADOR DIRECTAMENTE EN LA BASE DE DATOS
+        // Usamos el ID del colaborador que ya tenemos (colaboradorAsignado)
+        const { data: perfilData, error: perfilError } = await supabase
+        .from('perfiles')
+        .select('correo')
+        .eq('id', colaboradorAsignado)
+        .single();
+
+          if (perfilError || !perfilData) {
+              alert("No se pudo encontrar el correo del colaborador:", perfilError);
+          return;
+          }
+
+  const correoDelFuncionario = perfilData.correo;
       const datosEmailEscalado = {
         service_id: 'service_omhcwuf',
         template_id: 'template_a8hy01e',
