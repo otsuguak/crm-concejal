@@ -572,7 +572,10 @@ export default function Admin() {
                   <td><strong style={{color: '#0f172a', background: '#e2e8f0', padding: '4px 8px', borderRadius: '6px'}}>#{c.id}</strong></td>
                   <td><b>{c.ciudadano_nombre}</b></td>
                   
-                  <td className="ocultar-movil">{c.tipos_solicitud?.nombre}</td>
+                  <td className="ocultar-movil">
+                    <span style={{fontWeight: 'bold', display: 'block'}}>{c.tipos_solicitud?.nombre}</span>
+                    <span style={{fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase'}}>{c.subcategoria || 'General'}</span>
+                  </td>
                   
                   <td><span style={badgeStyle(c.estado)}>{c.estado || 'ABIERTO'}</span></td>
                   
@@ -824,8 +827,18 @@ export default function Admin() {
             </div>
             
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+              {/* FILA 1: Datos del ciudadano */}
               <div><p style={subTitleStyle}>Ciudadano</p><p style={{margin: 0, fontWeight: 'bold'}}>{casoSeleccionado.ciudadano_nombre}</p></div>
               <div><p style={subTitleStyle}>Contacto</p><p style={{margin: 0, fontWeight: 'bold'}}>{casoSeleccionado.ciudadano_telefono} | {casoSeleccionado.ciudadano_correo}</p></div>
+              
+              {/* FILA 2 (NUEVA): Contexto de la solicitud */}
+              <div><p style={subTitleStyle}>Tipo de Solicitud</p><p style={{margin: 0, fontWeight: 'bold'}}>{casoSeleccionado.tipos_solicitud?.nombre}</p></div>
+              <div>
+                <p style={subTitleStyle}>Categoría / Tema</p>
+                <p style={{margin: 0, fontWeight: '900', color: '#E30613', textTransform: 'uppercase'}}>{casoSeleccionado.subcategoria || 'No especificada'}</p>
+              </div>
+
+              {/* FILA 3: El problema detallado */}
               <div style={{gridColumn: '1 / -1'}}><p style={subTitleStyle}>Descripción del Caso</p><div style={{background: '#f8fafc', padding: '15px', borderRadius: '10px', fontSize: '0.95rem', color: '#334155'}}>{casoSeleccionado.descripcion_caso || 'Sin descripción.'}</div></div>
             </div>
 
