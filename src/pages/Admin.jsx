@@ -389,33 +389,61 @@ export default function Admin() {
     setSubiendo(false); 
   };
 
-  const solucionarCaso = async (idCaso) => { 
-    if (window.confirm("¿Confirmas que este caso ya fue gestionado?")) { 
-      setSubiendo(true); 
-      try { 
-        let ultimaNotaExtraida = 'Tu caso ha sido gestionado con éxito por nuestro equipo.';
-        if (casoSeleccionado.respuesta_gestion) {
-          const arrayNotas = casoSeleccionado.respuesta_gestion.split('\n\n=========================\n\n');
-          ultimaNotaExtraida = arrayNotas[arrayNotas.length - 1]; 
+  // 1. Asegúrate de tener el import arriba de todo en tu archivo .js o .jsx
+// import Swal from 'sweetalert2';
+
+const solucionarCaso = async (idCaso) => { 
+    // A. Lanzamos la alerta elegante y esperamos la respuesta del usuario
+  const result = await Swal.fire({title: '¿Confirmas gestión?', text: "¿Confirmas que este caso ya fue gestionado?", icon: 'question', showCancelButton: true, confirmButtonColor: '#2c3e50', cancelButtonColor: '#d33', confirmButtonText: 'Sí, confirmar',cancelButtonText: 'Cancelar',
+    reverseButtons: true
+  });
+
+  // B. Si el usuario hace clic en el botón de confirmación
+  if (result.isConfirmed) { 
+    setSubiendo(true); 
+    try { 
+      // --- TU LÓGICA ORIGINAL EMPIEZA AQUÍ ---
+      let ultimaNotaExtraida = 'Tu caso ha sido gestionado con éxito por nuestro equipo.';
+      
+      if (casoSeleccionado.respuesta_gestion) {
+        const arrayNotas = casoSeleccionado.respuesta_gestion.split('\n\n=========================\n\n');
+        ultimaNotaExtraida = arrayNotas[arrayNotas.length - 1]; 
+      }
+
+      const { error } = await supabase.from('casos').update({ estado: 'Solucionado' }).eq('id', idCaso); 
+      if (error) throw error; 
+
+      const datosEmailCierre = {
+        service_id: 'service_omhcwuf',
+        template_id: 'template_ap7el9i',
+        user_id: 'EJwAep9er9Fhi3d1W',
+        template_params: { 
+          correo_ciudadano: casoSeleccionado.ciudadano_correo, 
+          nombre_ciudadano: casoSeleccionado.ciudadano_nombre, 
+          numero_radicado: idCaso, 
+          ultima_respuesta: ultimaNotaExtraida 
         }
+      };
 
-        const { error } = await supabase.from('casos').update({ estado: 'Solucionado' }).eq('id', idCaso); 
-        if (error) throw error; 
+      fetch('https://api.emailjs.com/api/v1.0/email/send', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(datosEmailCierre) 
+      }).catch(err => console.log(err));
 
-        const datosEmailCierre = {
-          service_id: 'service_omhcwuf',
-          template_id: 'template_ap7el9i',
-          user_id: 'EJwAep9er9Fhi3d1W',
-          template_params: { correo_ciudadano: casoSeleccionado.ciudadano_correo, nombre_ciudadano: casoSeleccionado.ciudadano_nombre, numero_radicado: idCaso, ultima_respuesta: ultimaNotaExtraida }
-        };
-        fetch('https://api.emailjs.com/api/v1.0/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosEmailCierre) }).catch(err => console.log(err));
+      mostrarExito("¡Caso solucionado y correo enviado!"); 
+      setCasoSeleccionado(null); 
+      cargarTodo(); 
+      // --- TU LÓGICA ORIGINAL TERMINA AQUÍ ---
 
-        mostrarExito("¡Caso solucionado y correo enviado!"); 
-        setCasoSeleccionado(null); cargarTodo(); 
-      } catch (err) { alert("Error: " + err.message); } 
+    } catch (err) { 
+      // Cambiamos el alert(err.message) por uno de SweetAlert para que no desentone
+      Swal.fire("Error", err.message, "error"); 
+    } finally {
       setSubiendo(false); 
-    } 
-  };
+    }
+  } 
+};
 
   const casosFiltrados = casos.filter(c => {
     const matchNombre = c.ciudadano_nombre.toLowerCase().includes(busqueda.toLowerCase());
