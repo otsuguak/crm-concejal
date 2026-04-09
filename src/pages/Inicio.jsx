@@ -113,13 +113,13 @@ export default function Inicio() {
         template_id: 'template_x1juode',   // REEMPLAZA ESTO
         user_id: 'EJwAep9er9Fhi3d1W',              // REEMPLAZA ESTO
         template_params: {
-          correo_ciudadano: correo,
-          nombre_ciudadano: nombre,
-          numero_radicado: idRadicadoGenerado,
-          fecha_creacion: new Date().toLocaleDateString(),
-          tipo_solicitud: tipoSeleccionado?.nombre || 'Solicitud',
-          categoria: subcategoria,
-          detalle_caso: descripcion
+        correo_ciudadano: correo,
+        nombre_ciudadano: nombre,
+        numero_radicado: idRadicadoGenerado,
+        fecha_creacion: new Date().toLocaleDateString(),
+        tipo_solicitud: tipoSeleccionado?.nombre || 'Solicitud',
+        categoria: subcategoria,
+        detalle_caso: descripcion
         }
       };
 
