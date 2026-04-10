@@ -127,7 +127,10 @@ export default function Admin() {
       setTiposSolicitud(todosTipos || []);
 
       if (miPerfil.rol === 'admin') {
-        const { data: eq } = await supabase.from('perfiles').select('*').eq('rol', 'asesor');
+        const { data: eq } = await supabase
+            .from('perfiles')
+            .select('*')
+            .in('rol', ['asesor', 'admin']); // Metemos a ambos en el combo
         setColaboradores(eq || []);
       }
     }
