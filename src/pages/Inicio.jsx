@@ -446,7 +446,6 @@ export default function Inicio() {
                 )}
               </div>
             )}
-                 // Localiza este bloque al final del modal de biografía en Inicio.jsx
                 <div style={{ padding: '40px', textAlign: 'center', borderTop: '1px solid #e2e8f0', marginTop: 'auto', background: '#ffffff' }}>
                     <p style={{ color: '#003366', fontWeight: '900', letterSpacing: '2px', fontSize: '0.85rem', textTransform: 'uppercase' }}>
                     {config.textos.fraseFinal} {/* 👈 ESTE ES EL CAMBIO CLAVE */}
