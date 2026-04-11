@@ -657,8 +657,6 @@ export default function Admin() {
                 <div style={{display:'flex', alignItems:'center', gap:'15px', marginBottom:'15px'}}>
                    <input type="file" onChange={e=>setArchivoHeroFondo(e.target.files[0])} style={{flex: 1, fontSize:'0.85rem'}}/>
                    {confTextos.heroFondoActual && !archivoHeroFondo && ( <div style={{display:'flex', alignItems:'center', gap:'10px'}}><img src={confTextos.heroFondoActual} style={{width: '60px', height: '40px', objectFit:'cover', borderRadius:'5px'}} /><span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Fondo activo</span></div> )}
-
-                   <input type="text" value={confBio.fraseFinal} onChange={e => setConfBio({...confBio, fraseFinal: e.target.value})} placeholder="Ej. HECHOS PARA EL CAMBIO - CONCEJAL #5" style={inStyle}   />
                 </div>
 
                 <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>Título Principal:</label>
