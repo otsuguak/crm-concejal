@@ -592,7 +592,7 @@ export default function Admin() {
           <div style={{display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', backgroundColor: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
             <input type="text" className="search-bar" placeholder="🔍 Buscar ciudadano..." value={busqueda} onChange={e=>setBusqueda(e.target.value)} style={{flex: '1 1 200px'}} />
             <select value={filtroSLA} onChange={e=>setFiltroSLA(e.target.value)} className="search-bar" style={{flex: '1 1 150px'}}><option value="">⏱️ Todos los Tiempos</option><option value="fila-vencida">🔴 Vencidos</option><option value="fila-alerta">🟡 Por Vencer</option><option value="atiempo">🟢 A Tiempo</option></select>
-            <select value={filtroEstado} onChange={e=>setFiltroEstado(e.target.value)} className="search-bar" style={{flex: '1 1 150px'}}><option value="">📌 Todos los Estados</option>{perfil.rol === 'admin' && <option value="ABIERTO">⏳ Abiertos</option>}<option value="Escalado">⚙️ Escalados</option><option value="En Gestión">🚀 En Gestión</option><option value="Solucionado">✅ Solucionados</option></select>
+            <select value={filtroEstado} onChange={e=>setFiltroEstado(e.target.value)} className="search-bar" style={{flex: '1 1 150px'}}><option value="">📌 Todos los Estados</option>{perfil.rol === 'admin' && <option value="ABIERTO">⏳ Abiertos</option>}<option value="Escalado">⚙️ Escalados</option><option value="En Gestión">⚙️ En Gestión</option><option value="Solucionado">✅ Solucionados</option></select>
             {perfil.rol === 'admin' && ( <select value={filtroResponsable} onChange={e=>setFiltroResponsable(e.target.value)} className="search-bar" style={{flex: '1 1 160px'}}><option value="">👤 Responsables</option><option value="SIN_ASIGNAR">⚠️ Sin Asignar</option>{colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select> )}
             <select value={filtroAsunto} onChange={e=>setFiltroAsunto(e.target.value)} className="search-bar" style={{flex: '1 1 150px'}}><option value="">📁 Asuntos</option>{tiposSolicitud.map(t => <option key={t.id} value={t.nombre}>{t.nombre}</option>)}</select>
             {(busqueda || filtroAsunto || filtroEstado || filtroResponsable || filtroSLA) && ( <button onClick={() => { setBusqueda(''); setFiltroAsunto(''); setFiltroEstado(''); setFiltroResponsable(''); setFiltroSLA(''); }} style={{background: '#fee2e2', color: '#991b1b', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>✖ Limpiar</button> )}
@@ -917,19 +917,9 @@ export default function Admin() {
                   </label>
                   
                   <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || (!respuestaActual.trim() && !archivoRespuesta)} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: ((!respuestaActual.trim() && !archivoRespuesta) || subiendo) ? 0.6 : 1}}>➕ Guardar</button>
-                </div>
-              </div>
-              {archivoRespuesta && <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '8px', fontWeight: 'bold', paddingLeft: '5px' }}>✓ Archivo listo: {archivoRespuesta.name}</div>}
 
-            </div>
-
-            <div style={{background: '#f1f5f9', padding: '25px', borderRadius: '15px'}}>
-              <h4 style={{margin: '0 0 15px 0', color: '#0f172a'}}>{perfil.rol === 'admin' ? '⚙️ Acciones de Gestión' : '⚙️ Acciones de Gestión'}</h4>
-              
-              {casoSeleccionado.estado?.toLowerCase() !== 'solucionado' ? (
-                <>
-                  <div style={{display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap'}}>
-                    {/* Botón para poner En Gestión con manejo de errores estricto */}
+                  {/* NUEVO LUGAR PARA EL BOTÓN NARANJA */}
+                  {casoSeleccionado.estado?.toLowerCase() !== 'solucionado' && (
                     <button 
                       onClick={async () => {
                         setSubiendo(true);
@@ -944,22 +934,34 @@ export default function Admin() {
                         }
                         setSubiendo(false);
                       }}
-                      style={{flex: 1, background: '#f59e0b', color: 'white', padding: '14px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', minWidth: '150px'}}
+                      style={{background: '#f59e0b', color: 'white', padding: '12px 20px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', minWidth: '160px'}}
                     >
                       ⚙️ Empezar Gestión
                     </button>
+                  )}
+                </div>
+              </div>
+              {archivoRespuesta && <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '8px', fontWeight: 'bold', paddingLeft: '5px' }}>✓ Archivo listo: {archivoRespuesta.name}</div>}
 
-                    {perfil.rol === 'admin' && (
-                      <div style={{display: 'flex', gap: '10px', flex: 2, minWidth: '250px'}}>
+            </div>
+
+            <div style={{background: '#f1f5f9', padding: '25px', borderRadius: '15px'}}>
+              <h4 style={{margin: '0 0 15px 0', color: '#0f172a'}}>{perfil.rol === 'admin' ? '⚙️ Acciones de Gestión' : '⚙️ Acciones de Gestión'}</h4>
+              
+              {casoSeleccionado.estado?.toLowerCase() !== 'solucionado' ? (
+                <>
+                  {perfil.rol === 'admin' && (
+                    <div style={{display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap'}}>
+                      <div style={{display: 'flex', gap: '10px', flex: 1, minWidth: '250px'}}>
                         <select value={colaboradorAsignado} onChange={e => setColaboradorAsignado(e.target.value)} style={{flex: 1, padding: '14px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', background: 'white'}}>
-                          <option value="">Seleccione asesor...</option>
+                          <option value="">Seleccione asesor para escalar...</option>
                           {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                         </select>
                         <button onClick={() => asignarCaso(casoSeleccionado.id)} style={{background: '#003366', color: 'white', padding: '14px 25px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer'}}>Escalar</button>
                       </div>
-                    )}
-                  </div>
-                  <button onClick={() => solucionarCaso(casoSeleccionado.id)} style={{width: '100%', background: '#10b981', color: 'white', padding: '16px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', marginTop: '10px'}}>✅ Marcar Solucionado</button>
+                    </div>
+                  )}
+                  <button onClick={() => solucionarCaso(casoSeleccionado.id)} style={{width: '100%', background: '#10b981', color: 'white', padding: '16px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', marginTop: perfil.rol === 'admin' ? '0' : '10px'}}>✅ Marcar Solucionado</button>
                 </>
               ) : (
                 perfil.rol === 'admin' && (
