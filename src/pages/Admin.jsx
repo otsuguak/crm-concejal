@@ -42,7 +42,7 @@ export default function Admin() {
   const [archivoHeroFondo, setArchivoHeroFondo] = useState(null);
 
   const [confBio, setConfBio] = useState({
-    titulo: '', descripcion: '', videoUrl: '', foto1Actual: '', foto2Actual: '', label: '', foto2Descripcion: ''
+    titulo: '', descripcion: '', videoUrl: '', foto1Actual: '', foto2Actual: '', label: '', foto2Descripcion: '', fraseFinal: ''
   });
   const [archivoBio1, setArchivoBio1] = useState(null);
   const [archivoBio2, setArchivoBio2] = useState(null);
@@ -115,7 +115,8 @@ export default function Admin() {
             titulo: configData.bio_titulo || '', descripcion: configData.bio_descripcion || '', 
             videoUrl: configData.bio_video_url || '', foto1Actual: configData.bio_foto_1 || '', foto2Actual: configData.bio_foto_2 || '',
             label: configData.bio_label || 'PERFIL TERRITORIAL',
-            foto2Descripcion: configData.bio_foto_2_descripcion || '' 
+            foto2Descripcion: configData.bio_foto_2_descripcion || '', 
+            fraseFinal: configData.bio_pie_pagina || 'HECHOS PARA EL CAMBIO - CONCEJAL #5' 
           });
         }
       }
@@ -254,7 +255,7 @@ export default function Admin() {
 
       const { error } = await supabase.from('configuracion').update({
         bio_titulo: confBio.titulo, bio_descripcion: confBio.descripcion, bio_video_url: confBio.videoUrl,
-        bio_foto_1: urlFoto1, bio_foto_2: urlFoto2, bio_label: confBio.label, bio_foto_2_descripcion: confBio.foto2Descripcion 
+        bio_foto_1: urlFoto1, bio_foto_2: urlFoto2, bio_label: confBio.label, bio_foto_2_descripcion: confBio.foto2Descripcion, bio_pie_pagina: confBio.fraseFinal
       }).eq('id', 1);
 
       if (error) throw error;
@@ -625,6 +626,8 @@ export default function Admin() {
                 <div style={{display:'flex', alignItems:'center', gap:'15px', marginBottom:'15px'}}>
                    <input type="file" onChange={e=>setArchivoHeroFondo(e.target.files[0])} style={{flex: 1, fontSize:'0.85rem'}}/>
                    {confTextos.heroFondoActual && !archivoHeroFondo && ( <div style={{display:'flex', alignItems:'center', gap:'10px'}}><img src={confTextos.heroFondoActual} style={{width: '60px', height: '40px', objectFit:'cover', borderRadius:'5px'}} /><span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Fondo activo</span></div> )}
+
+                   <input type="text" value={confBio.fraseFinal} onChange={e => setConfBio({...confBio, fraseFinal: e.target.value})} placeholder="Ej. HECHOS PARA EL CAMBIO - CONCEJAL #5" style={inStyle}   />
                 </div>
 
                 <label style={{fontSize:'0.8rem', fontWeight:'bold', color:'#64748b'}}>Título Principal:</label>

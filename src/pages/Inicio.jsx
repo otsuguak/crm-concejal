@@ -17,7 +17,7 @@ export default function Inicio() {
       tituloRedes: '📱 ¡Conéctate con el Cambio!', descRedes: 'Únete a nuestra comunidad digital. Entérate en tiempo real de nuestros proyectos, debates y resultados en el municipio. ¡Tu voz también cuenta en nuestras redes!'
     },
     redes: { facebook: '', instagram: '', tiktok: '' },
-    bio: { titulo: '', descripcion: '', videoUrl: '', foto1: '', foto2: '', label: '', foto2Descripcion: '' } 
+    bio: { titulo: '', descripcion: '', videoUrl: '', foto1: '', foto2: '', label: '', foto2Descripcion: '', fraseFinal: '' } 
   });
 
   const [nombre, setNombre] = useState('');
@@ -55,7 +55,8 @@ export default function Inicio() {
             tituloHero: dataConfig.titulo_hero || 'EL CAMBIO SIGUE', descHero: dataConfig.descripcion_hero || 'Gestión real, resultados para la gente. Vota Cambio Radical #5',
             tituloForm: dataConfig.titulo_formulario || 'VENTANILLA CIUDADANA', descForm: dataConfig.descripcion_formulario || '¿Tienes una petición, queja o una idea para mejorar nuestro municipio? Mi equipo jurídico y técnico revisará tu caso personalmente.',
             tituloNoticias: dataConfig.titulo_noticias || 'GESTIÓN EN TERRITORIO', descNoticias: dataConfig.descripcion_noticias_seccion || 'Transformando nuestra comunidad con hechos, no palabras.',
-            tituloRedes: dataConfig.titulo_redes || '📱 ¡Conéctate con el Cambio!', descRedes: dataConfig.descripcion_redes || 'Únete a nuestra comunidad digital. Entérate en tiempo real de nuestros proyectos, debates y resultados en el municipio. ¡Tu voz también cuenta en nuestras redes!'
+            tituloRedes: dataConfig.titulo_redes || '📱 ¡Conéctate con el Cambio!', descRedes: dataConfig.descripcion_redes || 'Únete a nuestra comunidad digital. Entérate en tiempo real de nuestros proyectos, debates y resultados en el municipio. ¡Tu voz también cuenta en nuestras redes!',
+            fraseFinal: dataConfig.bio_pie_pagina || 'HECHOS PARA EL CAMBIO - CONCEJAL #5'
           },
           redes: { facebook: dataConfig.url_facebook || '', instagram: dataConfig.url_instagram || '', tiktok: dataConfig.url_tiktok || '' },
           bio: { titulo: dataConfig.bio_titulo || '', descripcion: dataConfig.bio_descripcion || '', videoUrl: dataConfig.bio_video_url || '', foto1: dataConfig.bio_foto_1 || '', foto2: dataConfig.bio_foto_2 || '', label: dataConfig.bio_label || 'PERFIL TERRITORIAL', foto2Descripcion: dataConfig.bio_foto_2_descripcion || '' }
@@ -478,7 +479,11 @@ export default function Inicio() {
               <div style={{ textAlign: 'center' }}><span style={{ fontWeight: 'bold', color: '#E30613', display: 'block', marginBottom: '15px' }}>🔴 REGISTRO: EL ANTES</span><img src={noticiaSeleccionada.imagen_1_antes} onClick={() => setFotoBioExpandida(noticiaSeleccionada.imagen_1_antes)} className="zoom-img" style={{ width: '100%', borderRadius: '20px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', border: '4px solid white' }} /></div>
               <div style={{ textAlign: 'center' }}><span style={{ fontWeight: 'bold', color: '#28a745', display: 'block', marginBottom: '15px' }}>🟢 GESTIÓN: EL DESPUÉS</span><img src={noticiaSeleccionada.imagen_1_despues} onClick={() => setFotoBioExpandida(noticiaSeleccionada.imagen_1_despues)} className="zoom-img" style={{ width: '100%', borderRadius: '20px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', border: '4px solid white' }} /></div>
             </div>
-            <footer style={{ marginTop: '60px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '30px', color: '#003366', fontWeight: 'bold' }}>CAMBIO RADICAL #5 - HECHOS PARA EL CAMBIO </footer>
+            <div style={{ padding: '40px', textAlign: 'center', borderTop: '1px solid #e2e8f0', marginTop: 'auto', background: '#ffffff' }}>
+              <p style={{ color: '#003366', fontWeight: '900', letterSpacing: '2px', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+              {config.bio.fraseFinal}
+              </p>
+            </div>
           </div>
         </div>
       )}
