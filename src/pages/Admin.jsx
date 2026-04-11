@@ -332,30 +332,61 @@ export default function Admin() {
     if (!respuestaActual.trim() && !archivoRespuesta) return; 
     setSubiendo(true); 
     try { 
+      // 1. Manejo de archivos adjuntos (Tu lógica original intacta)
       let urlDocumentoAdjunto = null;
-      if (archivoRespuesta) { urlDocumentoAdjunto = await subirArchivo(archivoRespuesta, 'noticias'); }
+      if (archivoRespuesta) { 
+        urlDocumentoAdjunto = await subirArchivo(archivoRespuesta, 'noticias'); 
+      }
 
       const fechaObj = new Date(); 
       const fechaTexto = fechaObj.toLocaleString(); 
       const nombreAutor = perfil.nombre || (perfil.rol === 'admin' ? 'Administrador' : 'Asesor'); 
       
       let textoBase = respuestaActual.trim() ? respuestaActual : 'Documento oficial adjuntado.';
-      if (urlDocumentoAdjunto) { textoBase += `\n📎 Documento Adjunto: ${urlDocumentoAdjunto}`; }
+      if (urlDocumentoAdjunto) { 
+        textoBase += `\n📎 Documento Adjunto: ${urlDocumentoAdjunto}`; 
+      }
 
+      // 2. Construcción del historial (Manteniendo tu formato de separadores)
       const nuevaNota = `[${fechaTexto}] - ${nombreAutor}:\n${textoBase}`; 
       const historialPrevio = casoSeleccionado.respuesta_gestion || ''; 
-      const nuevoHistorialCompleto = historialPrevio ? `${historialPrevio}\n\n=========================\n\n${nuevaNota}` : nuevaNota; 
+      const nuevoHistorialCompleto = historialPrevio 
+        ? `${historialPrevio}\n\n=========================\n\n${nuevaNota}` 
+        : nuevaNota; 
       
-      const { error } = await supabase.from('casos').update({ respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() }).eq('id', idCaso); 
+      // 3. Persistencia en Supabase
+      const { error } = await supabase
+        .from('casos')
+        .update({ 
+          respuesta_gestion: nuevoHistorialCompleto, 
+          fecha_respuesta: fechaObj.toISOString() 
+        })
+        .eq('id', idCaso); 
+      
       if (error) throw error; 
       
       mostrarExito("¡Respuesta guardada!"); 
-      setCasoSeleccionado(prev => ({ ...prev, respuesta_gestion: nuevoHistorialCompleto, fecha_respuesta: fechaObj.toISOString() })); 
+
+      // 4. Sincronización de estados (Local y Global)
+      // Actualizamos el modal abierto
+      setCasoSeleccionado(prev => ({ 
+        ...prev, 
+        respuesta_gestion: nuevoHistorialCompleto, 
+        fecha_respuesta: fechaObj.toISOString() 
+      })); 
+
+      // 🔥 EL REFRESCO MAESTRO: Para que al volver a entrar la nota siga ahí
+      await cargarTodo(); 
+
+      // 5. Limpieza de interfaz
       setRespuestaActual(''); 
       setArchivoRespuesta(null); 
-    } catch (err) { alert("Error: " + err.message); } 
+
+    } catch (err) { 
+      alert("Error: " + err.message); 
+    } 
     setSubiendo(false); 
-  };
+};
 
   const asignarCaso = async (idCaso) => { 
     if (!colaboradorAsignado) { alert("⚠️ Selecciona un asesor."); return; } 
