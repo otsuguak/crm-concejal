@@ -936,7 +936,7 @@ export default function Admin() {
 
 const overlayStyle = { position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' };
 const modalStyle = { background: 'white', width: '100%', borderRadius: '24px', padding: '40px', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' };
-const closeBtnStyle = { position: 'absolute', top: '25px', right: '25px', border: 'none', background: '#f1f5f9', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', color: '#64748b' };
+const closeBtnStyle = { position: 'absolute', top: '20px', right: '25px', border: 'none', background: 'none', fontSize: '2rem', fontWeight: '300', color: '#94a3b8', cursor: 'pointer', lineHeight: '1', zIndex: 10 };
 const modalTitleStyle = { margin: '0 0 5px 0', color: '#0f172a', fontSize: '1.8rem' };
 const modalDescStyle = { margin: '0 0 25px 0', color: '#64748b', fontSize: '0.95rem' };
 const subTitleStyle = { margin: '5px 0', fontSize: '0.85rem', color: '#64748b' };
