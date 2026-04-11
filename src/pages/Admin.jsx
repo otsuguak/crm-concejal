@@ -485,10 +485,22 @@ export default function Admin() {
     }
   };
 
+  // 🔥 MEJORA DE FILTROS: Ignorar tildes para que reconozca "En Gestión" o "En Gestion" 🔥
   const casosFiltrados = casos.filter(c => {
     const matchNombre = c.ciudadano_nombre.toLowerCase().includes(busqueda.toLowerCase());
     const matchAsunto = filtroAsunto ? c.tipos_solicitud?.nombre === filtroAsunto : true;
-    let matchEstado = true; if (filtroEstado) { if (filtroEstado === 'ABIERTO') { matchEstado = esCasoNuevo(c.estado); } else { matchEstado = c.estado && c.estado.toLowerCase() === filtroEstado.toLowerCase(); } }
+    
+    let matchEstado = true; 
+    if (filtroEstado) { 
+      if (filtroEstado === 'ABIERTO') { 
+        matchEstado = esCasoNuevo(c.estado); 
+      } else { 
+        const estadoCaso = c.estado ? c.estado.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+        const estadoFiltro = filtroEstado.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        matchEstado = estadoCaso === estadoFiltro; 
+      } 
+    }
+    
     let matchResponsable = true; if (filtroResponsable === 'SIN_ASIGNAR') { matchResponsable = !c.colaborador_id; } else if (filtroResponsable) { matchResponsable = c.colaborador_id === filtroResponsable; }
     const claseSLA = calcularColorEstado(c.fecha_limite, c.estado);
     let matchSLA = true; if (filtroSLA === 'atiempo') { matchSLA = claseSLA === ''; } else if (filtroSLA) { matchSLA = claseSLA === filtroSLA; }
@@ -570,7 +582,7 @@ export default function Admin() {
 
         <div className="stats-grid">
           <StatCard label={perfil.rol === 'admin' ? "Peticiones Totales" : "Mis Casos Totales"} val={casos.length} col="#3b82f6" />
-          <StatCard label="En Gestión" val={casos.filter(c=> c.estado && c.estado.toLowerCase() === 'en gestión').length} col="#f59e0b" />
+          <StatCard label="En Gestión" val={casos.filter(c=> c.estado && c.estado.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 'en gestion').length} col="#f59e0b" />
           <StatCard label="Casos Cerrados" val={casos.filter(c=> c.estado && c.estado.toLowerCase() === 'solucionado').length} col="#10b981" />
         </div>
 
@@ -917,12 +929,19 @@ export default function Admin() {
               {casoSeleccionado.estado?.toLowerCase() !== 'solucionado' ? (
                 <>
                   <div style={{display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap'}}>
-                    {/* Botón para poner En Gestión */}
+                    {/* Botón para poner En Gestión con manejo de errores estricto */}
                     <button 
                       onClick={async () => {
                         setSubiendo(true);
-                        const { error } = await supabase.from('casos').update({ estado: 'En Gestión' }).eq('id', casoSeleccionado.id);
-                        if (!error) { mostrarExito("Estado: En Gestión ⚙️"); cargarTodo(); setCasoSeleccionado(null); }
+                        try {
+                            const { error } = await supabase.from('casos').update({ estado: 'En Gestión' }).eq('id', casoSeleccionado.id);
+                            if (error) throw error;
+                            mostrarExito("Estado: En Gestión ⚙️"); 
+                            setCasoSeleccionado(null);
+                            await cargarTodo(); 
+                        } catch (err) {
+                            alert("Error de base de datos: " + err.message);
+                        }
                         setSubiendo(false);
                       }}
                       style={{flex: 1, background: '#f59e0b', color: 'white', padding: '14px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', minWidth: '150px'}}
@@ -947,8 +966,15 @@ export default function Admin() {
                   <button 
                     onClick={async () => {
                       setSubiendo(true);
-                      const { error } = await supabase.from('casos').update({ estado: 'En Gestión' }).eq('id', casoSeleccionado.id);
-                      if (!error) { mostrarExito("Radicado Reabierto 🔓"); cargarTodo(); setCasoSeleccionado(null); }
+                      try {
+                          const { error } = await supabase.from('casos').update({ estado: 'En Gestión' }).eq('id', casoSeleccionado.id);
+                          if (error) throw error;
+                          mostrarExito("Radicado Reabierto 🔓"); 
+                          setCasoSeleccionado(null);
+                          await cargarTodo(); 
+                      } catch (err) {
+                          alert("Error de base de datos: " + err.message);
+                      }
                       setSubiendo(false);
                     }} 
                     style={{width: '100%', background: '#64748b', color: 'white', padding: '16px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', marginTop: '10px'}}
@@ -979,11 +1005,11 @@ const btnStyle = (act) => ({
 });
 
 const badgeStyle = (est) => {
-  const estReal = est ? est.toLowerCase().trim() : 'abierto';
-  let bg = '#fee2e2'; let text = '#991b1b';
-  if (estReal === 'solucionado') { bg = '#dcfce7'; text = '#166534'; }
-  else if (estReal === 'escalado') { bg = '#fef3c7'; text = '#92400e'; }
-  else if (estReal === 'en gestión') { bg = '#fff7ed'; text = '#ea580c'; }
+  const estReal = est ? est.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : 'abierto';
+  let bg = '#fee2e2'; let text = '#991b1b'; // ABIERTO (Rojo)
+  if (estReal === 'solucionado') { bg = '#dcfce7'; text = '#166534'; } // Verde
+  else if (estReal === 'escalado') { bg = '#fef3c7'; text = '#92400e'; } // Amarillo
+  else if (estReal === 'en gestion') { bg = '#e0f2fe'; text = '#0369a1'; } // Azul Claro para diferenciar de Escalado
   return { padding:'6px 14px', borderRadius:'30px', fontSize:'0.7rem', fontWeight:'800', textTransform:'uppercase', letterSpacing:'0.5px', background: bg, color: text };
 };
 
