@@ -756,6 +756,18 @@ export default function Admin() {
                     {confBio.foto2Actual && !archivoBio2 && ( <div style={{marginTop: '10px', display:'flex', alignItems:'center', gap:'10px'}}><img src={confBio.foto2Actual} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius:'8px'}} /><span style={{fontSize: '0.7rem', color: '#10b981'}}>✓ Foto asignada</span></div> )}
                   </div>
                 </div>
+                {/* --- SECCIÓN PARA MODIFICAR LA FRASE DE CIERRE --- */}
+                <div style={{background: '#f8fafc', padding: '20px', borderRadius: '15px', border: '1px solid #e2e8f0', marginTop: '20px'}}>
+                    <h4 style={{margin: '0 0 15px 0', color: '#003366'}}>4. Texto de Cierre (Footer)</h4>
+                    <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Frase al final de la Biografía:</label>
+                    <input 
+                      type="text" 
+                      value={confBio.fraseFinal} 
+                      onChange={e => setConfBio({...confBio, fraseFinal: e.target.value})} 
+                      placeholder="Ej. HECHOS PARA EL CAMBIO - CONCEJAL #5" 
+                      style={inStyle} 
+                    />
+                 </div>
                 <div style={{marginTop: '20px'}}>
                   <label style={{fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '5px'}}>Descripción para Foto Secundaria (Opcional)</label>
                   <textarea value={confBio.foto2Descripcion} onChange={e => setConfBio({...confBio, foto2Descripcion: e.target.value})} placeholder="Escribe un pie de foto o descripción corta..." style={{...inStyle, height: '80px', resize: 'vertical'}} />
