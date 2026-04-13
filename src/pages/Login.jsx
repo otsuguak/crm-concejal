@@ -18,29 +18,26 @@ export default function Login() {
   const [regCargando, setRegCargando] = useState(false);
   const [regError, setRegError] = useState(null); 
   
-  const [mensajeExito, setMensajeExito] = useState(''); // Lo cambié a string para reusarlo con distintos mensajes
+  const [mensajeExito, setMensajeExito] = useState(''); 
 
   const [mostrarRecuperar, setMostrarRecuperar] = useState(false);
   const [emailRecuperar, setEmailRecuperar] = useState('');
   const [recuperarCargando, setRecuperarCargando] = useState(false);
   const [mensajeRecuperar, setMensajeRecuperar] = useState(null);
 
-  // 🔥 NUEVOS ESTADOS PARA ACTUALIZAR LA CONTRASEÑA 🔥
   const [modoRestablecer, setModoRestablecer] = useState(false);
   const [nuevaPassword, setNuevaPassword] = useState('');
 
   const navigate = useNavigate();
 
-  // 🔥 ESCUCHADOR DE EVENTOS DE SUPABASE 🔥
+  // 🔥 ESCUCHAMOS SI EL USUARIO VIENE DEL CORREO DE RECUPERACIÓN 🔥
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Si el evento es PASSWORD_RECOVERY, significa que el usuario viene del link del correo
       if (event === 'PASSWORD_RECOVERY') {
         setMostrarRecuperar(false); 
-        setModoRestablecer(true); // Activamos la pantalla de nueva contraseña
+        setModoRestablecer(true); 
       }
     });
-
     return () => { subscription.unsubscribe(); };
   }, []);
 
@@ -106,7 +103,22 @@ export default function Login() {
     setMensajeRecuperar(null);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(emailRecuperar);
+      // 🔥 1. VALIDACIÓN ESTRICTA: ¿El correo existe en nuestra tabla perfiles? 🔥
+      const { data: usuarioExiste, error: errBusqueda } = await supabase
+        .from('perfiles')
+        .select('correo')
+        .eq('correo', emailRecuperar)
+        .single();
+
+      if (errBusqueda || !usuarioExiste) {
+        throw new Error("Este correo no pertenece a ningún asesor registrado.");
+      }
+
+      // 🔥 2. ENVÍO DE CORREO FORZANDO LA REDIRECCIÓN A ESTA PÁGINA 🔥
+      const { error } = await supabase.auth.resetPasswordForEmail(emailRecuperar, {
+        redirectTo: 'https://www.carlospabonconcejal.com.co/login'
+      });
+      
       if (error) throw error;
       
       setMensajeRecuperar({ tipo: 'exito', texto: '✅ Te enviamos un enlace de recuperación al correo.' });
@@ -116,19 +128,17 @@ export default function Login() {
         setMensajeRecuperar(null);
       }, 4000);
     } catch (error) {
-      setMensajeRecuperar({ tipo: 'error', texto: '❌ Hubo un error. Verifica que el correo esté bien escrito.' });
+      setMensajeRecuperar({ tipo: 'error', texto: `❌ ${error.message}` });
     } finally {
       setRecuperarCargando(false);
     }
   };
 
-  // 🔥 FUNCIÓN PARA GUARDAR LA NUEVA CONTRASEÑA 🔥
   const handleActualizarPassword = async (e) => {
     e.preventDefault();
     setCargando(true);
     setErrorLogin(null);
     try {
-      // Supabase sabe qué usuario es por la sesión temporal que se creó al abrir el link
       const { error } = await supabase.auth.updateUser({ password: nuevaPassword });
       if (error) throw error;
 
@@ -136,7 +146,6 @@ export default function Login() {
       setModoRestablecer(false);
       setNuevaPassword('');
       
-      // Como ya tiene sesión válida, lo mandamos directo al admin
       setTimeout(() => {
         setMensajeExito('');
         navigate('/admin');
@@ -153,15 +162,8 @@ export default function Login() {
     <div className="login-container" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', fontFamily: "'Inter', sans-serif" }}>
       
       <style>{`
-        input {
-          color: #0f172a !important;
-          background-color: #ffffff !important;
-          color-scheme: light !important; 
-        }
-        input::placeholder {
-          color: #94a3b8 !important;
-          opacity: 1 !important;
-        }
+        input { color: #0f172a !important; background-color: #ffffff !important; color-scheme: light !important; }
+        input::placeholder { color: #94a3b8 !important; opacity: 1 !important; }
         @media (max-width: 768px) {
           .login-container { flex-direction: column !important; }
           .login-left { padding: 40px 20px !important; min-height: 40vh; }
@@ -176,7 +178,6 @@ export default function Login() {
         </div>
       )}
 
-      {/* MITAD IZQUIERDA */}
       <div className="login-left" style={{ flex: 1, background: '#003366', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '50px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ background: '#E30613', color: '#ffffff', padding: '15px 30px', borderRadius: '15px', fontWeight: '900', fontSize: '3rem', marginBottom: '20px', boxShadow: '0 10px 25px rgba(227, 6, 19, 0.4)' }}>Bienvenidos</div>
@@ -187,23 +188,19 @@ export default function Login() {
         <div style={{ position: 'absolute', bottom: '-15%', left: '-10%', width: '500px', height: '500px', background: 'rgba(227, 6, 19, 0.1)', borderRadius: '50%' }}></div>
       </div>
 
-      {/* MITAD DERECHA */}
       <div className="login-right" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
         <div style={{ width: '100%', maxWidth: '400px', background: '#ffffff', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
           
           {errorLogin && ( <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', fontWeight: 'bold', textAlign: 'center', border: '1px solid #fca5a5' }}>{errorLogin}</div> )}
 
-          {/* 🔥 LÓGICA DE PANTALLA: RESTABLECER CONTRASEÑA VS LOGIN NORMAL 🔥 */}
           {modoRestablecer ? (
             <form onSubmit={handleActualizarPassword} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <h2 style={{ color: '#0f172a', margin: '0 0 5px 0', fontSize: '1.8rem' }}>Crea tu nueva clave 🔐</h2>
               <p style={{ color: '#64748b', margin: '0 0 20px 0', fontSize: '0.95rem' }}>Estás a un paso de recuperar tu acceso.</p>
-              
               <div>
                 <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '8px', display: 'block' }}>Nueva Contraseña</label>
                 <input type="password" placeholder="Mínimo 6 caracteres" value={nuevaPassword} onChange={(e) => setNuevaPassword(e.target.value)} required minLength="6" style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', fontSize: '1rem' }} />
               </div>
-              
               <button type="submit" disabled={cargando} style={{ background: '#10b981', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: '0.2s', marginTop: '5px', boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)' }}>
                 {cargando ? '⌛ Guardando...' : '💾 Actualizar y Entrar'}
               </button>
@@ -240,7 +237,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* MODAL RECUPERAR CONTRASEÑA */}
       {mostrarRecuperar && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ background: 'white', width: '100%', maxWidth: '450px', borderRadius: '24px', padding: '40px', position: 'relative' }}>
@@ -267,7 +263,6 @@ export default function Login() {
         </div>
       )}
 
-      {/* MODAL REGISTRO */}
       {mostrarRegistro && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ background: 'white', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '40px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
