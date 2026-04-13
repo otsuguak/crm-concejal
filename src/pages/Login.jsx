@@ -110,9 +110,9 @@ export default function Login() {
       {/* MITAD IZQUIERDA */}
       <div className="login-left" style={{ flex: 1, background: '#003366', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '50px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ background: '#E30613', color: '#ffffff', padding: '15px 30px', borderRadius: '15px', fontWeight: '900', fontSize: '3rem', marginBottom: '20px', boxShadow: '0 10px 25px rgba(227, 6, 19, 0.4)' }}>5</div>
+          <div style={{ background: '#E30613', color: '#ffffff', padding: '15px 30px', borderRadius: '15px', fontWeight: '900', fontSize: '3rem', marginBottom: '20px', boxShadow: '0 10px 25px rgba(227, 6, 19, 0.4)' }}>Bienvenidos</div>
           <h1 className="login-title" style={{ fontSize: '3rem', fontWeight: '900', margin: '0 0 15px 0', lineHeight: '1.1', color: '#ffffff' }}>Portal de<br />Gestión Interna</h1>
-          <p style={{ fontSize: '1.1rem', color: '#cbd5e1', maxWidth: '400px', lineHeight: '1.6', margin: 0 }}>Acceso exclusivo para el equipo de trabajo del Concejal. Administra, gestiona y da solución a los radicados territoriales.</p>
+          <p style={{ fontSize: '1.1rem', color: '#cbd5e1', maxWidth: '400px', lineHeight: '1.6', margin: 0 }}>Acceso exclusivo para el equipo de trabajo de Carlos Andres Pabon Gomez. Administra, gestiona y da solución a los radicados territoriales.</p>
         </div>
         <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '400px', height: '400px', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '50%' }}></div>
         <div style={{ position: 'absolute', bottom: '-15%', left: '-10%', width: '500px', height: '500px', background: 'rgba(227, 6, 19, 0.1)', borderRadius: '50%' }}></div>

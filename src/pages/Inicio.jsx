@@ -230,8 +230,9 @@ export default function Inicio() {
       )}
 
       <header className="hero-header" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#002244' }}>
-        {config.identidad.fondoHero && ( <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.65, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div> )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,34,68,0.4) 0%, rgba(0,15,30,0.7) 100%)', zIndex: 1 }}></div>
+        {config.identidad.fondoHero && ( <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.85, backgroundImage: `url(${config.identidad.fondoHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div> )}
+        {/* 🔥 AQUÍ ESTÁ EL CAMBIO: Cambiamos 0.7 por 0.5 para que pase más luz 🔥 */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,34,68,0.3) 0%, rgba(0,15,30,0.5) 100%)', zIndex: 1 }}></div>
         <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '20rem', color: 'rgba(255,255,255,0.05)', fontWeight: '900', userSelect: 'none', pointerEvents: 'none', zIndex: 2 }}>5</div>
         <div style={{ position: 'relative', zIndex: 3, padding: '120px 5%', textAlign: 'center' }}>
           <h1 className="hero-title">{config.textos.tituloHero}</h1>
@@ -352,7 +353,7 @@ export default function Inicio() {
               </label>
             </div>
             
-            <button type="submit" disabled={cargando} style={{ width: '100%', padding: '18px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: '0.3s', boxShadow: '0 4px 10px rgba(0, 51, 102, 0.2)' }}>{cargando ? 'PROCESANDO RADICADO...' : 'ENVIAR RADICADO AL #5'}</button>
+            <button type="submit" disabled={cargando} style={{ width: '100%', padding: '18px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: '0.3s', boxShadow: '0 4px 10px rgba(0, 51, 102, 0.2)' }}>{cargando ? 'PROCESANDO RADICADO...' : 'ENVIAR RADICADO'}</button>
           </form>
         </section>
       </div>
@@ -491,7 +492,7 @@ export default function Inicio() {
       )}
 
       <footer style={{ backgroundColor: '#001a33', color: 'white', padding: '60px 5%', textAlign: 'center' }}>
-        <p style={{ fontWeight: '900', fontSize: '1.5rem', marginBottom: '10px' }}>CAMBIO RADICAL #5</p>
+        <p style={{ fontWeight: '900', fontSize: '1.5rem', marginBottom: '10px' }}>Carlos Andres Pabon Gomez</p>
         <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Publicidad política pagada. Mosquera, Cundinamarca © 2026</p>
         <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Diseño y Desarrollo Tecnológico por LumenGroup S.A.S. © 2026 V.1.0.0</p>
       </footer>
