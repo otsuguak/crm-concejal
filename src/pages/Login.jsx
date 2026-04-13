@@ -20,6 +20,12 @@ export default function Login() {
   
   const [mensajeExito, setMensajeExito] = useState(false); 
 
+  // 🔥 NUEVOS ESTADOS PARA RECUPERAR CONTRASEÑA 🔥
+  const [mostrarRecuperar, setMostrarRecuperar] = useState(false);
+  const [emailRecuperar, setEmailRecuperar] = useState('');
+  const [recuperarCargando, setRecuperarCargando] = useState(false);
+  const [mensajeRecuperar, setMensajeRecuperar] = useState(null);
+
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -76,6 +82,29 @@ export default function Login() {
       }
     } catch (error) { setRegError(error.message); }
     setRegCargando(false);
+  };
+
+  // 🔥 FUNCIÓN PARA ENVIAR CORREO DE RECUPERACIÓN 🔥
+  const handleRecuperarPassword = async (e) => {
+    e.preventDefault();
+    setRecuperarCargando(true);
+    setMensajeRecuperar(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(emailRecuperar);
+      if (error) throw error;
+      
+      setMensajeRecuperar({ tipo: 'exito', texto: '✅ Te enviamos un enlace de recuperación al correo.' });
+      setTimeout(() => {
+        setMostrarRecuperar(false);
+        setEmailRecuperar('');
+        setMensajeRecuperar(null);
+      }, 4000);
+    } catch (error) {
+      setMensajeRecuperar({ tipo: 'error', texto: '❌ Hubo un error. Verifica que el correo esté bien escrito.' });
+    } finally {
+      setRecuperarCargando(false);
+    }
   };
 
   return (
@@ -135,7 +164,19 @@ export default function Login() {
               <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '8px', display: 'block' }}>Contraseña</label>
               <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', fontSize: '1rem' }} />
             </div>
-            <button type="submit" disabled={cargando} style={{ background: '#003366', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: '0.2s', marginTop: '10px' }}>
+            
+            {/* 🔥 ENLACE DE OLVIDÉ MI CONTRASEÑA 🔥 */}
+            <div style={{ textAlign: 'right', marginTop: '-10px' }}>
+              <button 
+                type="button" 
+                onClick={() => { setMostrarRecuperar(true); setMensajeRecuperar(null); setEmailRecuperar(''); }} 
+                style={{ background: 'none', border: 'none', color: '#003366', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+
+            <button type="submit" disabled={cargando} style={{ background: '#003366', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: '0.2s', marginTop: '5px' }}>
               {cargando ? '⌛ Iniciando sesión...' : 'Ingresar al CRM 🚀'}
             </button>
           </form>
@@ -146,6 +187,38 @@ export default function Login() {
         </div>
       </div>
 
+      {/* ========================================================= */}
+      {/* 🔥 MODAL DE RECUPERACIÓN DE CONTRASEÑA 🔥 */}
+      {/* ========================================================= */}
+      {mostrarRecuperar && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ background: 'white', width: '100%', maxWidth: '450px', borderRadius: '24px', padding: '40px', position: 'relative' }}>
+            <button onClick={() => setMostrarRecuperar(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#f1f5f9', border: 'none', width: '35px', height: '35px', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', color: '#64748b' }}>✕</button>
+            <h2 style={{ margin: '0 0 5px 0', color: '#0f172a' }}>Recuperar Acceso 🔐</h2>
+            <p style={{ margin: '0 0 25px 0', color: '#64748b', fontSize: '0.9rem' }}>Ingresa tu correo y te enviaremos un enlace seguro para restablecer tu contraseña.</p>
+            
+            {mensajeRecuperar && (
+              <div style={{ background: mensajeRecuperar.tipo === 'exito' ? '#dcfce7' : '#fee2e2', color: mensajeRecuperar.tipo === 'exito' ? '#166534' : '#991b1b', padding: '15px', borderRadius: '10px', fontSize: '0.9rem', marginBottom: '20px', fontWeight: 'bold', border: `1px solid ${mensajeRecuperar.tipo === 'exito' ? '#bbf7d0' : '#fca5a5'}`, textAlign: 'center' }}>
+                {mensajeRecuperar.texto}
+              </div>
+            )}
+
+            <form onSubmit={handleRecuperarPassword} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#475569' }}>Correo Registrado</label>
+                <input type="email" value={emailRecuperar} onChange={(e) => setEmailRecuperar(e.target.value)} placeholder="tu-correo@ejemplo.com" required style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box', marginTop: '5px' }} />
+              </div>
+              <button type="submit" disabled={recuperarCargando} style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '16px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px', fontSize: '1rem' }}>
+                {recuperarCargando ? 'Enviando...' : 'Enviar Enlace de Recuperación'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL DE REGISTRO (MANTENIDO INTACTO) */}
+      {/* ========================================================= */}
       {mostrarRegistro && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ background: 'white', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '40px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
