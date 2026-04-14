@@ -18,6 +18,12 @@ export default function Admin() {
   
   const [tiposSolicitud, setTiposSolicitud] = useState([]); 
   
+  // 🔥 NUEVOS ESTADOS PARA FESTIVOS 🔥
+  const [festivos, setFestivos] = useState([]);
+  const [mostrarModalFestivos, setMostrarModalFestivos] = useState(false);
+  const [nuevaFechaFestivo, setNuevaFechaFestivo] = useState('');
+  const [nuevaDescFestivo, setNuevaDescFestivo] = useState('');
+
   const [casoSeleccionado, setCasoSeleccionado] = useState(null);
   const [mostrarModalLogros, setMostrarModalLogros] = useState(false);
   const [mostrarModalTiempos, setMostrarModalTiempos] = useState(false); 
@@ -127,6 +133,10 @@ export default function Admin() {
       const { data: todosTipos } = await supabase.from('tipos_solicitud').select('*').order('id', {ascending: true});
       setTiposSolicitud(todosTipos || []);
 
+      // 🔥 CARGAR FESTIVOS 🔥
+      const { data: festivosDB } = await supabase.from('festivos').select('*').order('fecha', {ascending: true});
+      setFestivos(festivosDB || []);
+
       if (miPerfil.rol === 'admin') {
         const { data: eq } = await supabase
             .from('perfiles')
@@ -167,6 +177,60 @@ export default function Admin() {
     const { error } = await supabase.storage.from(bucket).upload(name, file); 
     if (error) throw error; 
     return supabase.storage.from(bucket).getPublicUrl(name).data.publicUrl; 
+  };
+
+  // 🔥 LÓGICA DE DÍAS HÁBILES Y FESTIVOS 🔥
+  const agregarFestivo = async (e) => {
+    e.preventDefault();
+    if (!nuevaFechaFestivo) return;
+    setSubiendo(true);
+    try {
+      const { error } = await supabase.from('festivos').insert([{ fecha: nuevaFechaFestivo, descripcion: nuevaDescFestivo }]);
+      if (error) throw error;
+      mostrarExito("¡Festivo agregado!");
+      setNuevaFechaFestivo('');
+      setNuevaDescFestivo('');
+      cargarTodo();
+    } catch (err) { alert("Error: " + err.message); }
+    setSubiendo(false);
+  };
+
+  const eliminarFestivo = async (id) => {
+    if (!window.confirm("¿Borrar este festivo?")) return;
+    setSubiendo(true);
+    try {
+      const { error } = await supabase.from('festivos').delete().eq('id', id);
+      if (error) throw error;
+      mostrarExito("Festivo eliminado.");
+      cargarTodo();
+    } catch (err) { alert("Error: " + err.message); }
+    setSubiendo(false);
+  };
+
+  // 🔥 NUEVO CÁLCULO DE FECHA LÍMITE (SOLO HÁBILES) 🔥
+  const recalcularFechaLimite = async (casoId, diasSla) => {
+    const { data: casoActual } = await supabase.from('casos').select('created_at').eq('id', casoId).single();
+    if(!casoActual) return;
+
+    let fechaActual = new Date(casoActual.created_at);
+    let diasAgregados = 0;
+    const arrayFestivos = festivos.map(f => f.fecha); // Obtenemos un array simple con las fechas 'YYYY-MM-DD'
+
+    while (diasAgregados < diasSla) {
+      fechaActual.setDate(fechaActual.getDate() + 1); // Sumamos 1 día
+      
+      const esFinDeSemana = fechaActual.getDay() === 0 || fechaActual.getDay() === 6; // 0 = Domingo, 6 = Sábado
+      const fechaString = fechaActual.toISOString().split('T')[0]; // Formato YYYY-MM-DD para comparar
+      const esFestivo = arrayFestivos.includes(fechaString);
+
+      // Si NO es fin de semana y NO es festivo, contamos este día como válido.
+      if (!esFinDeSemana && !esFestivo) {
+        diasAgregados++;
+      }
+    }
+
+    // Actualizamos la base de datos con la nueva fecha límite
+    await supabase.from('casos').update({ fecha_limite: fechaActual.toISOString() }).eq('id', casoId);
   };
 
   const guardarConfigSeguridad = async (e) => { e.preventDefault(); setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ requiere_codigo: confSeguridad.requiere, codigo_secreto_registro: confSeguridad.codigo }).eq('id', 1); if (error) throw error; mostrarExito("¡Seguridad del portal actualizada!"); setMostrarModalSeguridad(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
@@ -324,7 +388,21 @@ export default function Admin() {
   };
 
   const toggleVisibilidad = async (noticia) => { setSubiendo(true); try { const nuevoEstado = !noticia.visible; await supabase.from('noticias').update({ visible: nuevoEstado }).eq('id', noticia.id); cargarTodo(); } catch (error) { alert("Error al cambiar estado: " + error.message); } setSubiendo(false); };
-  const actualizarDiasSLA = async (idTipo, nuevosDias) => { setSubiendo(true); try { await supabase.from('tipos_solicitud').update({ dias_respuesta: parseInt(nuevosDias) || 0 }).eq('id', idTipo); await cargarTodo(); mostrarExito("¡Tiempo actualizado!"); } catch (error) { alert("Error: " + error.message); } setSubiendo(false); };
+  
+  // 🔥 AL ACTUALIZAR LOS DÍAS SLA, RECALCULAMOS LAS FECHAS LÍMITES 🔥
+  const actualizarDiasSLA = async (idTipo, nuevosDias) => { 
+    setSubiendo(true); 
+    try { 
+      await supabase.from('tipos_solicitud').update({ dias_respuesta: parseInt(nuevosDias) || 0 }).eq('id', idTipo); 
+      
+      // Opcional: Podríamos recalcular los casos abiertos de este tipo, pero por ahora solo aplica a los nuevos.
+      // Si el concejal quiere actualizar los viejos también, habría que hacer un bucle.
+
+      await cargarTodo(); 
+      mostrarExito("¡Tiempo actualizado!"); 
+    } catch (error) { alert("Error: " + error.message); } 
+    setSubiendo(false); 
+  };
 
   const calcularColorEstado = (fechaLimiteStr, estadoActual) => { if (estadoActual && estadoActual.toLowerCase() === 'solucionado') return ''; if (!fechaLimiteStr) return ''; const hoy = new Date(); const limite = new Date(fechaLimiteStr); const diffDays = Math.ceil((limite.getTime() - hoy.getTime()) / (1000 * 3600 * 24)); if (diffDays < 0) { return 'fila-vencida'; } else if (diffDays >= 0 && diffDays <= 2) { return 'fila-alerta'; } return ''; };
 
@@ -592,7 +670,7 @@ export default function Admin() {
           <div style={{display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', backgroundColor: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
             <input type="text" className="search-bar" placeholder="🔍 Buscar ciudadano..." value={busqueda} onChange={e=>setBusqueda(e.target.value)} style={{flex: '1 1 200px'}} />
             <select value={filtroSLA} onChange={e=>setFiltroSLA(e.target.value)} className="search-bar" style={{flex: '1 1 150px'}}><option value="">⏱️ Todos los Tiempos</option><option value="fila-vencida">🔴 Vencidos</option><option value="fila-alerta">🟡 Por Vencer</option><option value="atiempo">🟢 A Tiempo</option></select>
-            <select value={filtroEstado} onChange={e=>setFiltroEstado(e.target.value)} className="search-bar" style={{flex: '1 1 150px'}}><option value="">📌 Todos los Estados</option>{perfil.rol === 'admin' && <option value="ABIERTO">⏳ Abiertos</option>}<option value="Escalado">⚙️ Escalados</option><option value="En Gestión">⚙️ En Gestión</option><option value="Solucionado">✅ Solucionados</option></select>
+            <select value={filtroEstado} onChange={e=>setFiltroEstado(e.target.value)} className="search-bar" style={{flex: '1 1 150px'}}><option value="">📌 Todos los Estados</option>{perfil.rol === 'admin' && <option value="ABIERTO">⏳ Abiertos</option>}<option value="Escalado">⚙️ Escalados</option><option value="En Gestión">🚀 En Gestión</option><option value="Solucionado">✅ Solucionados</option></select>
             {perfil.rol === 'admin' && ( <select value={filtroResponsable} onChange={e=>setFiltroResponsable(e.target.value)} className="search-bar" style={{flex: '1 1 160px'}}><option value="">👤 Responsables</option><option value="SIN_ASIGNAR">⚠️ Sin Asignar</option>{colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select> )}
             <select value={filtroAsunto} onChange={e=>setFiltroAsunto(e.target.value)} className="search-bar" style={{flex: '1 1 150px'}}><option value="">📁 Asuntos</option>{tiposSolicitud.map(t => <option key={t.id} value={t.nombre}>{t.nombre}</option>)}</select>
             {(busqueda || filtroAsunto || filtroEstado || filtroResponsable || filtroSLA) && ( <button onClick={() => { setBusqueda(''); setFiltroAsunto(''); setFiltroEstado(''); setFiltroResponsable(''); setFiltroSLA(''); }} style={{background: '#fee2e2', color: '#991b1b', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>✖ Limpiar</button> )}
@@ -803,23 +881,72 @@ export default function Admin() {
         </div>
       )}
 
+      {/* 🔥 MODAL DE TIEMPOS (AHORA CON BOTÓN PARA VER FESTIVOS) 🔥 */}
       {mostrarModalTiempos && (
         <div style={overlayStyle}>
           <div style={{...modalStyle, maxWidth: '800px'}}>
             <button onClick={()=>setMostrarModalTiempos(false)} style={closeBtnStyle}>✕</button>
-            <h2 style={modalTitleStyle}>⏱️ Tiempos de Respuesta (SLA)</h2>
-            <p style={modalDescStyle}>Define los días calendario para resolver cada solicitud.</p>
+            
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+              <h2 style={modalTitleStyle}>⏱️ Tiempos de Respuesta (SLA)</h2>
+              
+              {/* Botón para abrir Festivos */}
+              <button 
+                onClick={() => setMostrarModalFestivos(true)} 
+                style={{background: '#003366', color: 'white', padding: '8px 15px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer'}}
+              >
+                📅 Configurar Festivos
+              </button>
+            </div>
+            
+            <p style={modalDescStyle}>Define los días <b>hábiles</b> para resolver cada solicitud.</p>
+            
             <div style={{padding:'10px', overflowY:'auto', flexGrow: 1}}>
               <table className="admin-table" style={{background:'white', borderRadius:'12px', overflow:'hidden', boxShadow:'0 2px 4px rgba(0,0,0,0.02)'}}>
-                <thead style={{background:'#f1f5f9'}}><tr><th style={{padding:'15px 20px'}}>Tipo de Solicitud</th><th style={{padding:'15px 20px', textAlign:'center'}}>Días para Responder</th><th style={{padding:'15px 20px', textAlign:'right'}}>Acción</th></tr></thead>
+                <thead style={{background:'#f1f5f9'}}><tr><th style={{padding:'15px 20px'}}>Tipo de Solicitud</th><th style={{padding:'15px 20px', textAlign:'center'}}>Días Hábiles</th><th style={{padding:'15px 20px', textAlign:'right'}}>Acción</th></tr></thead>
                 <tbody>
                   {tiposSolicitud.map(tipo => (
                     <tr key={tipo.id}>
                       <td style={{padding:'15px 20px'}}><b>{tipo.nombre}</b></td>
                       <td style={{padding:'15px 20px', textAlign:'center'}}><input type="number" defaultValue={tipo.dias_respuesta || 5} id={`dias_${tipo.id}`} style={{width: '80px', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center'}} /> días</td>
-                      <td style={{padding:'15px 20px', textAlign:'right'}}><button className="btn-gestionar-pro" style={{background: '#10b981', color: 'white'}} onClick={() => actualizarDiasSLA(tipo.id, document.getElementById(`dias_${tipo.id}`).value)}>💾 Guardar</button></td>
+                      <td style={{padding:'15px 20px', textAlign:'right'}}>
+                        <button className="btn-gestionar-pro" style={{background: '#10b981', color: 'white'}} onClick={() => actualizarDiasSLA(tipo.id, document.getElementById(`dias_${tipo.id}`).value)}>💾 Guardar</button>
+                      </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 NUEVO MODAL DE FESTIVOS 🔥 */}
+      {mostrarModalFestivos && (
+        <div style={{...overlayStyle, zIndex: 1100}}>
+          <div style={{...modalStyle, maxWidth: '600px'}}>
+            <button onClick={()=>setMostrarModalFestivos(false)} style={closeBtnStyle}>✕</button>
+            <h2 style={modalTitleStyle}>📅 Días Festivos</h2>
+            <p style={modalDescStyle}>Estos días NO contarán en el reloj de vencimiento de las PQR.</p>
+            
+            <form onSubmit={agregarFestivo} style={{display: 'flex', gap: '10px', marginBottom: '20px', background: '#f8fafc', padding: '15px', borderRadius: '10px', border: '1px solid #e2e8f0'}}>
+              <input type="date" value={nuevaFechaFestivo} onChange={(e) => setNuevaFechaFestivo(e.target.value)} required style={{flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1'}} />
+              <input type="text" placeholder="Ej: Día de la Independencia" value={nuevaDescFestivo} onChange={(e) => setNuevaDescFestivo(e.target.value)} required style={{flex: 2, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1'}} />
+              <button type="submit" disabled={subiendo} style={{background: '#003366', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'}}>+</button>
+            </form>
+
+            <div style={{maxHeight: '300px', overflowY: 'auto'}}>
+              <table className="admin-table" style={{background:'white', borderRadius:'12px', overflow:'hidden'}}>
+                <thead style={{background:'#f1f5f9'}}><tr><th>Fecha</th><th>Festivo</th><th>Acción</th></tr></thead>
+                <tbody>
+                  {festivos.map(f => (
+                    <tr key={f.id}>
+                      <td><b>{f.fecha}</b></td>
+                      <td>{f.descripcion}</td>
+                      <td><button onClick={() => eliminarFestivo(f.id)} style={{background:'#fee2e2', color:'#991b1b', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer', fontWeight:'bold', fontSize:'0.8rem'}}>🗑️</button></td>
+                    </tr>
+                  ))}
+                  {festivos.length === 0 && <tr><td colSpan="3" style={{textAlign: 'center', padding: '20px', color: '#94a3b8'}}>No hay festivos registrados.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -883,18 +1010,15 @@ export default function Admin() {
             </div>
             
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
-              {/* FILA 1: Datos del ciudadano */}
               <div><p style={subTitleStyle}>Ciudadano</p><p style={{margin: 0, fontWeight: 'bold'}}>{casoSeleccionado.ciudadano_nombre}</p></div>
               <div><p style={subTitleStyle}>Contacto</p><p style={{margin: 0, fontWeight: 'bold'}}>{casoSeleccionado.ciudadano_telefono} | {casoSeleccionado.ciudadano_correo}</p></div>
               
-              {/* FILA 2 (NUEVA): Contexto de la solicitud */}
               <div><p style={subTitleStyle}>Tipo de Solicitud</p><p style={{margin: 0, fontWeight: 'bold'}}>{casoSeleccionado.tipos_solicitud?.nombre}</p></div>
               <div>
                 <p style={subTitleStyle}>Categoría / Tema</p>
                 <p style={{margin: 0, fontWeight: '900', color: '#E30613', textTransform: 'uppercase'}}>{casoSeleccionado.subcategoria || 'No especificada'}</p>
               </div>
 
-              {/* FILA 3: El problema detallado */}
               <div style={{gridColumn: '1 / -1'}}><p style={subTitleStyle}>Descripción del Caso</p><div style={{background: '#f8fafc', padding: '15px', borderRadius: '10px', fontSize: '0.95rem', color: '#334155'}}>{casoSeleccionado.descripcion_caso || 'Sin descripción.'}</div></div>
             </div>
 
@@ -905,20 +1029,12 @@ export default function Admin() {
                 {casoSeleccionado.respuesta_gestion ? formatearTextoChat(casoSeleccionado.respuesta_gestion) : <span style={{color: '#94a3b8', fontStyle: 'italic'}}>Aún no hay notas...</span>}
               </div>
               
-              {/* Barra de Chat Responsiva */}
               <div style={{display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
                 
                 <input type="text" placeholder="Escribe una nota o solución..." value={respuestaActual} onChange={e => setRespuestaActual(e.target.value)} style={{flex: '1 1 200px', padding: '12px 15px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem'}} />
                 
-                <div style={{display: 'flex', gap: '10px', flex: '1 0 auto', justifyContent: 'flex-end'}}>
-                  <label style={{ cursor: 'pointer', background: archivoRespuesta ? '#dcfce7' : '#f1f5f9', padding: '10px 15px', borderRadius: '10px', border: archivoRespuesta ? '1px solid #86efac' : '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.3s' }} title="Adjuntar documento o foto">
-                     <span style={{ fontSize: '1.2rem' }}>📎</span>
-                     <input type="file" style={{ display: 'none' }} onChange={e => setArchivoRespuesta(e.target.files[0])} />
-                  </label>
+                <div style={{display: 'flex', gap: '10px', flex: '1 0 auto', justifyContent: 'flex-end', flexWrap: 'wrap'}}>
                   
-                  <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || (!respuestaActual.trim() && !archivoRespuesta)} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: ((!respuestaActual.trim() && !archivoRespuesta) || subiendo) ? 0.6 : 1}}>➕ Guardar</button>
-
-                  {/* NUEVO LUGAR PARA EL BOTÓN NARANJA */}
                   {casoSeleccionado.estado?.toLowerCase() !== 'solucionado' && (
                     <button 
                       onClick={async () => {
@@ -926,7 +1042,7 @@ export default function Admin() {
                         try {
                             const { error } = await supabase.from('casos').update({ estado: 'En Gestión' }).eq('id', casoSeleccionado.id);
                             if (error) throw error;
-                            mostrarExito("Estado: En Gestión ⚙️"); 
+                            mostrarExito("Estado: En Gestión 🚀"); 
                             setCasoSeleccionado(null);
                             await cargarTodo(); 
                         } catch (err) {
@@ -934,11 +1050,18 @@ export default function Admin() {
                         }
                         setSubiendo(false);
                       }}
-                      style={{background: '#f59e0b', color: 'white', padding: '12px 20px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', minWidth: '160px'}}
+                      style={{background: '#f59e0b', color: 'white', padding: '10px 15px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: '0.3s'}}
                     >
-                      ⚙️ Empezar Gestión
+                      🚀 En Gestión
                     </button>
                   )}
+
+                  <label style={{ cursor: 'pointer', background: archivoRespuesta ? '#dcfce7' : '#f1f5f9', padding: '10px 15px', borderRadius: '10px', border: archivoRespuesta ? '1px solid #86efac' : '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.3s' }} title="Adjuntar documento o foto">
+                     <span style={{ fontSize: '1.2rem' }}>📎</span>
+                     <input type="file" style={{ display: 'none' }} onChange={e => setArchivoRespuesta(e.target.files[0])} />
+                  </label>
+                  
+                  <button onClick={() => agregarNotaAlHistorial(casoSeleccionado.id)} disabled={subiendo || (!respuestaActual.trim() && !archivoRespuesta)} style={{background: '#00A6FB', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', opacity: ((!respuestaActual.trim() && !archivoRespuesta) || subiendo) ? 0.6 : 1}}>➕ Guardar</button>
                 </div>
               </div>
               {archivoRespuesta && <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '8px', fontWeight: 'bold', paddingLeft: '5px' }}>✓ Archivo listo: {archivoRespuesta.name}</div>}
@@ -946,7 +1069,7 @@ export default function Admin() {
             </div>
 
             <div style={{background: '#f1f5f9', padding: '25px', borderRadius: '15px'}}>
-              <h4 style={{margin: '0 0 15px 0', color: '#0f172a'}}>{perfil.rol === 'admin' ? '⚙️ Acciones de Gestión' : '⚙️ Acciones de Gestión'}</h4>
+              <h4 style={{margin: '0 0 15px 0', color: '#0f172a'}}>⚙️ Acciones de Escalado y Cierre</h4>
               
               {casoSeleccionado.estado?.toLowerCase() !== 'solucionado' ? (
                 <>
@@ -957,7 +1080,7 @@ export default function Admin() {
                           <option value="">Seleccione asesor para escalar...</option>
                           {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                         </select>
-                        <button onClick={() => asignarCaso(casoSeleccionado.id)} style={{background: '#003366', color: 'white', padding: '14px 25px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer'}}>Escalar</button>
+                        <button onClick={() => asignarCaso(casoSeleccionado.id)} style={{background: '#003366', color: 'white', padding: '14px 25px', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer'}}>⚙️ Escalar</button>
                       </div>
                     </div>
                   )}
@@ -995,7 +1118,7 @@ export default function Admin() {
 
 const overlayStyle = { position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' };
 const modalStyle = { background: 'white', width: '100%', borderRadius: '24px', padding: '40px', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' };
-const closeBtnStyle = {position: 'absolute', top: '20px', right: '25px', border: 'none', background: '#f1f5f9', width: '40px', height: '40px',  borderRadius: '50%',  display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', fontWeight: 'bold', color: '#64748b', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', zIndex: 10, transition: '0.3s'};
+const closeBtnStyle = {position: 'absolute', top: '15px', right: '15px', border: 'none', background: '#f1f5f9', width: '40px', height: '40px',  borderRadius: '50%',  display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', fontWeight: 'bold', color: '#64748b', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', zIndex: 10, transition: '0.3s'};
 const modalTitleStyle = { margin: '0 0 5px 0', color: '#0f172a', fontSize: '1.8rem' };
 const modalDescStyle = { margin: '0 0 25px 0', color: '#64748b', fontSize: '0.95rem' };
 const subTitleStyle = { margin: '5px 0', fontSize: '0.85rem', color: '#64748b' };
@@ -1008,10 +1131,10 @@ const btnStyle = (act) => ({
 
 const badgeStyle = (est) => {
   const estReal = est ? est.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : 'abierto';
-  let bg = '#fee2e2'; let text = '#991b1b'; // ABIERTO (Rojo)
-  if (estReal === 'solucionado') { bg = '#dcfce7'; text = '#166534'; } // Verde
-  else if (estReal === 'escalado') { bg = '#fef3c7'; text = '#92400e'; } // Amarillo
-  else if (estReal === 'en gestion') { bg = '#e0f2fe'; text = '#0369a1'; } // Azul Claro para diferenciar de Escalado
+  let bg = '#fee2e2'; let text = '#991b1b'; 
+  if (estReal === 'solucionado') { bg = '#dcfce7'; text = '#166534'; } 
+  else if (estReal === 'escalado') { bg = '#fef3c7'; text = '#92400e'; } 
+  else if (estReal === 'en gestion') { bg = '#e0f2fe'; text = '#0369a1'; } 
   return { padding:'6px 14px', borderRadius:'30px', fontSize:'0.7rem', fontWeight:'800', textTransform:'uppercase', letterSpacing:'0.5px', background: bg, color: text };
 };
 
