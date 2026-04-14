@@ -207,31 +207,29 @@ export default function Admin() {
     setSubiendo(false);
   };
 
-  // 🔥 NUEVO CÁLCULO DE FECHA LÍMITE (SOLO HÁBILES) 🔥
+  // 🔥 NUEVO CÁLCULO DE FECHA LÍMITE (SOLO HÁBILES - ADAPTADO AL MER) 🔥
   const recalcularFechaLimite = async (casoId, diasSla) => {
-    const { data: casoActual } = await supabase.from('casos').select('created_at').eq('id', casoId).single();
+    const { data: casoActual } = await supabase.from('casos').select('fecha_creacion').eq('id', casoId).single();
     if(!casoActual) return;
 
-    let fechaActual = new Date(casoActual.created_at);
+    let fechaActual = new Date(casoActual.fecha_creacion); // 👈 Corregido a fecha_creacion
     let diasAgregados = 0;
-    const arrayFestivos = festivos.map(f => f.fecha); // Obtenemos un array simple con las fechas 'YYYY-MM-DD'
+    const arrayFestivos = festivos.map(f => f.fecha); 
 
     while (diasAgregados < diasSla) {
-      fechaActual.setDate(fechaActual.getDate() + 1); // Sumamos 1 día
+      fechaActual.setDate(fechaActual.getDate() + 1); 
       
-      const esFinDeSemana = fechaActual.getDay() === 0 || fechaActual.getDay() === 6; // 0 = Domingo, 6 = Sábado
-      const fechaString = fechaActual.toISOString().split('T')[0]; // Formato YYYY-MM-DD para comparar
+      const esFinDeSemana = fechaActual.getDay() === 0 || fechaActual.getDay() === 6; 
+      const fechaString = fechaActual.toISOString().split('T')[0]; 
       const esFestivo = arrayFestivos.includes(fechaString);
 
-      // Si NO es fin de semana y NO es festivo, contamos este día como válido.
       if (!esFinDeSemana && !esFestivo) {
         diasAgregados++;
       }
     }
 
-    // Actualizamos la base de datos con la nueva fecha límite
     await supabase.from('casos').update({ fecha_limite: fechaActual.toISOString() }).eq('id', casoId);
-  };
+  };  
 
   const guardarConfigSeguridad = async (e) => { e.preventDefault(); setSubiendo(true); try { const { error } = await supabase.from('configuracion').update({ requiere_codigo: confSeguridad.requiere, codigo_secreto_registro: confSeguridad.codigo }).eq('id', 1); if (error) throw error; mostrarExito("¡Seguridad del portal actualizada!"); setMostrarModalSeguridad(false); cargarTodo(); } catch (err) { alert("Error: " + err.message); } setSubiendo(false); };
   
